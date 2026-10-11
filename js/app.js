@@ -56,6 +56,8 @@ const ICONS = {
   front: 'M8 8h12v12H8zM4 16V4h12',
   under: 'M12 3L2 8l10 5 10-5zM2 12.5l10 5 10-5M2 17l10 5 10-5',
   mark: 'M3 6h18v5H3zM3 15h12M3 19h8',
+  eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6z',
+  eyeoff: 'M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2',
   back: 'M4 4h12v12H4zM8 20h12V8',
   gear: 'M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6zM12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1',
   comment: 'M4 5h16v11H9l-5 4z',
@@ -994,6 +996,12 @@ function selUI(a) {
 function drawAnnots(p) {
   if (!p) return;
   const e = els.get(p.id); if (!e) return;
+  // neues Element bei ausgeblendeten Markierungen: wieder einblenden, sonst wirkt es, als sei nichts passiert
+  if (e.nAnn != null && p.annots.length > e.nAnn && !S.prefs.showMarks) {
+    S.prefs.showMarks = true; savePrefs(); pagesEl.classList.remove('hidemarks'); updateSideLater();
+    toast('Markierungen und Kommentare werden wieder angezeigt (war in den Einstellungen ausgeschaltet)');
+  }
+  e.nAnn = p.annots.length;
   const editId = S.editing ? S.editing.a.id : null;
   const vis = p.annots.filter(a => a.id !== editId);
   const ann = vis.filter(a => !a.under).map(annotSVG).join('') + vis.filter(a => a.comment && a.t !== 'note').map(a => {
@@ -2605,7 +2613,7 @@ function settingsDialog(tab = 'doc') {
     if ($('#pAll', b).checked) for (const p of S.pages) for (const a of p.annots) if (a.t === 'measure') { a.unit = unit; a.scale = scale; delete a.dec; }
     setNight($('#pNight', b).checked);
     if ($('#pPencil', b)) setPencilOnly($('#pPencil', b).checked, true);
-    pagesEl.classList.toggle('hidemarks', !S.prefs.showMarks);
+    pagesEl.classList.toggle('hidemarks', !S.prefs.showMarks); updateSideLater();
     S.pages.forEach(drawAnnots); markDirty(); renderProps();
     toast('Einstellungen übernommen');
   });
@@ -2792,6 +2800,7 @@ function renderNotes() {
   el.innerHTML = `<div class="sphead"><span>Kommentare</span><span>${rows.length === total ? total : rows.length + ' / ' + total}</span></div>
     <div class="nfbar"><select class="field" id="noteFilter" aria-label="Kommentare filtern">${NOTE_FILTERS.map(([k, l]) => `<option value="${k}"${k === f ? ' selected' : ''}>${l}</option>`).join('')}</select>
     <button class="ibtn" id="noteExport" title="Kommentare als Textdatei speichern" aria-label="Kommentare exportieren"${total ? '' : ' disabled'}>${icon('save')}</button>
+    <button class="ibtn" id="noteEye" title="${S.prefs.showMarks ? 'Markierungen auf den Seiten ausblenden' : 'Markierungen sind ausgeblendet – einblenden'}" aria-label="Markierungen ein- oder ausblenden" aria-pressed="${!S.prefs.showMarks}">${icon(S.prefs.showMarks ? 'eye' : 'eyeoff')}</button>
     <button class="ibtn" id="noteSettings" title="Einstellungen für Kommentare" aria-label="Einstellungen für Kommentare">${icon('gear')}</button></div>` +
     (rows.length ? rows.join('') : `<p class="sempty">${total ? 'Keine Einträge für diesen Filter.' : 'Noch keine Kommentare. Notizen, Markierungen, Stempel und Zeichnungen erscheinen hier, geordnet nach Seiten. Jedes Element kann über die Sprechblase einen eigenen Kommentar bekommen.'}</p>`);
 }
@@ -3541,6 +3550,10 @@ function bindUI() {
   $('#notesPanel').addEventListener('click', e => {
     if (e.target.closest('#noteExport')) { exportNotes(); return; }
     if (e.target.closest('#noteSettings')) { settingsDialog('cmt'); return; }
+    if (e.target.closest('#noteEye')) {
+      S.prefs.showMarks = !S.prefs.showMarks; savePrefs(); pagesEl.classList.toggle('hidemarks', !S.prefs.showMarks);
+      setMsg(S.prefs.showMarks ? 'Markierungen werden angezeigt' : 'Markierungen ausgeblendet'); renderNotes(); return;
+    }
     const b = e.target.closest('[data-aid]'); if (b) gotoAnnot(b.dataset.pid, b.dataset.aid);
   });
   $('#notesPanel').addEventListener('change', e => { if (e.target.id === 'noteFilter') { S.noteFilter = e.target.value; renderNotes(); } });
