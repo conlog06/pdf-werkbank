@@ -53,6 +53,8 @@ const ICONS = {
   ul: 'M7 4v7a5 5 0 0 0 10 0V4M5 20h14',
   so: 'M5 12h14M16 6.5C15 5 13.6 4.5 12 4.5c-2.5 0-4 1.3-4 3 0 1.5 1 2.3 3 3M8 17c1 1.6 2.4 2.5 4.3 2.5 2.6 0 4.2-1.4 4.2-3.3 0-.9-.3-1.6-.9-2.2',
   close: 'M6 6l12 12M18 6L6 18',
+  front: 'M8 8h12v12H8zM4 16V4h12',
+  back: 'M4 4h12v12H4zM8 20h12V8',
 };
 
 const TOOL_NAMES = { select: 'Auswählen', objects: 'Inhalte', text: 'Text', edittext: 'Text ändern', pen: 'Stift', hl: 'Markieren', ul: 'Unterstreichen', so: 'Durchstreichen', rect: 'Rechteck', ellipse: 'Ellipse', line: 'Linie', arrow: 'Pfeil', white: 'Abdecken', check: 'Haken', cross: 'Kreuz', img: 'Bild', stamp: 'Stempel', note: 'Notiz', wm: 'Wasserzeichen' };
@@ -67,7 +69,7 @@ const SWATCHES = ['#1b2130', '#1f4fd8', '#d0342c', '#1e8a4c', '#e07b00', '#7a3fd
 const HINTS = {
   select: 'Element anklicken zum Verschieben · Ecke ziehen zum Skalieren · Doppelklick auf Text zum Bearbeiten',
   edittext: 'Auf vorhandenen Text klicken und direkt in der PDF ändern · leer lassen entfernt die Zeile',
-  objects: 'Klicken wählt ein Element der PDF · Rahmen ziehen wählt mehrere · Entf entfernt sie · Doppelklick auf Text bearbeitet ihn',
+  objects: 'Element der PDF antippen oder Rahmen aufziehen, dann ziehen zum Verschieben · Doppelklick auf Text bearbeitet ihn',
   white: 'Bereich aufziehen, um Inhalte mit Weiß abzudecken',
   text: '', img: 'Bild ausgewählt · Ecke ziehen zum Skalieren',
   hl: 'Auf eine Textzeile tippen oder einen Bereich aufziehen',
@@ -79,7 +81,7 @@ const HINTS = {
 if (COARSE) for (const k of ['pen', 'rect', 'ellipse', 'line', 'arrow', 'white', 'check', 'cross', 'objects']) HINTS[k] = (HINTS[k] ? HINTS[k] + ' · ' : '') + 'Mit zwei Fingern scrollen und zoomen';
 
 const TP = {
-  text: { color: '#1b2130', size: 12, font: 'Helvetica', bold: false },
+  text: { color: '#1b2130', size: 12, font: 'Helvetica', bold: false, bg: '' },
   pen: { color: '#1f4fd8', sw: 2, op: 100 },
   hl: { color: '#ffd400', op: 40 },
   rect: { color: '#d0342c', sw: 2 }, ellipse: { color: '#d0342c', sw: 2 },
@@ -110,7 +112,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const clone = o => JSON.parse(JSON.stringify(o));
 const pageById = id => S.pages.find(p => p.id === id);
-const hasCE = p => !!(p && p.ce && ((p.ce.del && p.ce.del.length) || (p.ce.rep && Object.keys(p.ce.rep).length)));
+const hasCE = p => !!(p && p.ce && ((p.ce.del && p.ce.del.length) || (p.ce.rep && Object.keys(p.ce.rep).length) || (p.ce.tf && Object.keys(p.ce.tf).length)));
 function ceKey(p) {
   if (!hasCE(p)) return '';
   const s = JSON.stringify(p.ce); let h = 5381;
@@ -217,7 +219,8 @@ function annotSVG(a) {
     case 'text': {
       const f = FONTS[a.font];
       const lines = a.text.split('\n');
-      return `<text font-family='${f.css}' font-size="${a.size}" font-weight="${a.bold ? 700 : 400}" fill="${c}" xml:space="preserve">` +
+      const bgr = a.bg ? (() => { const b = bbox(a), pd = a.size * 0.18; return `<rect x="${r2(b.x - pd)}" y="${r2(b.y - pd * 0.4)}" width="${r2(b.w + 2 * pd)}" height="${r2(b.h + pd * 0.8)}" fill="${a.bg}"/>`; })() : '';
+      return bgr + `<text font-family='${f.css}' font-size="${a.size}" font-weight="${a.bold ? 700 : 400}" fill="${c}" xml:space="preserve">` +
         lines.map((ln, i) => `<tspan x="${r2(a.x)}" y="${r2(a.y + f.bl * a.size + i * LH * a.size)}">${esc(ln) || ' '}</tspan>`).join('') + '</text>';
     }
     case 'stamp': {
@@ -399,7 +402,7 @@ async function ensureDerived(p) {
     for (const [dk, d] of S.derived) { if (S.derived.size <= 40) break; if (!live.has(dk)) { try { d.pdf.destroy(); } catch (e) { /* egal */ } S.derived.delete(dk); } }
   }
 }
-function newCE(p) { const c = p.ce || {}; return { del: [...(c.del || [])], rep: { ...(c.rep || {}) } }; }
+function newCE(p) { const c = p.ce || {}; return { del: [...(c.del || [])], rep: { ...(c.rep || {}) }, tf: { ...(c.tf || {}) } }; }
 async function applyCE(p) {
   busy(true, 'Seite wird neu aufgebaut …');
   try { await ensureDerived(p); }
@@ -416,7 +419,9 @@ function cItems(p) {
   const k = p.id + '|' + ceKey(p) + '|' + rotOf(p);
   if (citemCache.has(k)) return citemCache.get(k);
   const proxy = proxyOf(p); if (!proxy) return [];
-  const del = new Set((p.ce && p.ce.del) || []), rep = (p.ce && p.ce.rep) || {};
+  const del = new Set((p.ce && p.ce.del) || []), rep = (p.ce && p.ce.rep) || {}, tf = (p.ce && p.ce.tf) || {};
+  const X = (b, i) => ENG.xbox(b, tf[i]);
+  const tpt = (m, q) => (m ? [m[0] * q[0] + m[2] * q[1] + m[4], m[1] * q[0] + m[3] * q[1] + m[5]] : q);
   const vp = proxy.getViewport({ scale: 1, rotation: rotOf(p) });
   const db = b => {
     const pts = [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]].map(q => vp.convertToViewportPoint(q[0], q[1]));
@@ -426,7 +431,7 @@ function cItems(p) {
   const union = objs => [Math.min(...objs.map(o => o.bbox[0])), Math.min(...objs.map(o => o.bbox[1])), Math.max(...objs.map(o => o.bbox[2])), Math.max(...objs.map(o => o.bbox[3]))];
   const items = [];
   for (const g of an.groups) {
-    const first = g.first, rt = rep[first.i];
+    const first = g.first, rt = rep[first.i], A = tf[first.i];
     const alive = g.objs.filter(o => !del.has(o.i));
     let text, ub;
     if (rt !== undefined) {
@@ -437,9 +442,10 @@ function cItems(p) {
       if (!alive.some(o => !o.blank)) continue;
       text = ENG.joinText(alive); ub = union(alive);
     }
-    items.push({ kind: 'text', ids: g.objs.map(o => o.i), firstId: first.i, text: text.trimEnd(), box: db(ub), fs: first.fs, font: first.font, fill: first.fill, base: first.base, dir: first.dir });
+    const scale = A ? Math.sqrt(Math.abs(A[0] * A[3] - A[1] * A[2])) : 1;
+    items.push({ kind: 'text', ids: g.objs.map(o => o.i), firstId: first.i, text: text.trimEnd(), box: db(ENG.xbox(ub, A)), fs: first.fs * scale, font: first.font, fill: first.fill, base: tpt(A, first.base), dir: first.dir });
   }
-  for (const o of an.objects) if (o.kind !== 'text' && !del.has(o.i)) items.push({ kind: o.kind, ids: [o.i], box: db(o.bbox) });
+  for (const o of an.objects) if (o.kind !== 'text' && !del.has(o.i)) items.push({ kind: o.kind, ids: [o.i], box: db(X(o.bbox, o.i)) });
   citemCache.set(k, items);
   return items;
 }
@@ -461,9 +467,120 @@ const KIND_NAMES = { text: 'Text', path: 'Fläche', image: 'Bild', form: 'Grafik
 function cuiSVG(p) {
   let out = '';
   const box = (b, cls) => `<rect class="${cls}" x="${r2(b.x)}" y="${r2(b.y)}" width="${r2(Math.max(b.w, 1))}" height="${r2(Math.max(b.h, 1))}"/>`;
-  if (S.csel && S.csel.pid === p.id) for (const it of S.csel.items) out += box(it.box, 'csel');
+  if (S.csel && S.csel.pid === p.id) {
+    for (const it of S.csel.items) out += box(it.box, 'csel');
+    const u = cselBox(), pad = 4 / S.zoom, hs = (COARSE ? 16 : 9) / S.zoom;
+    if (S.csel.items.length > 1) out += box({ x: u.x - pad, y: u.y - pad, w: u.w + 2 * pad, h: u.h + 2 * pad }, 'cunion');
+    out += `<rect class="handle" x="${r2(u.x + u.w + pad - hs / 2)}" y="${r2(u.y + u.h + pad - hs / 2)}" width="${r2(hs)}" height="${r2(hs)}"/>`;
+  }
   if (S.hover && S.hover.pid === p.id && !(S.csel && S.csel.items.includes(S.hover.it))) out += box(S.hover.it.box, 'chov');
   return out;
+}
+function cselBox(items) {
+  items = items || (S.csel ? S.csel.items : []);
+  const x = Math.min(...items.map(i => i.box.x)), y = Math.min(...items.map(i => i.box.y));
+  return { x, y, w: Math.max(...items.map(i => i.box.x + i.box.w)) - x, h: Math.max(...items.map(i => i.box.y + i.box.h)) - y };
+}
+function onCselHandle(pt) {
+  if (!S.csel) return false;
+  const u = cselBox(), pad = 4 / S.zoom, hs = (COARSE ? 22 : 11) / S.zoom;
+  return Math.abs(pt[0] - (u.x + u.w + pad)) <= hs && Math.abs(pt[1] - (u.y + u.h + pad)) <= hs;
+}
+function inCsel(pt) {
+  if (!S.csel) return false;
+  const tol = (COARSE ? 6 : 2) / S.zoom;
+  return S.csel.items.some(it => pt[0] >= it.box.x - tol && pt[0] <= it.box.x + it.box.w + tol && pt[1] >= it.box.y - tol && pt[1] <= it.box.y + it.box.h + tol);
+}
+
+/* Transformation der ausgewählten PDF-Inhalte (Matrix im PDF-Koordinatensystem) */
+function d2u(p) { const vp = proxyOf(p).getViewport({ scale: 1, rotation: rotOf(p) }); return (x, y) => vp.convertToPdfPoint(x, y); }
+async function transformContent(p, items, M, msg) {
+  if (!items.length || ENG.isId(M)) return;
+  pushHist();
+  const ce = newCE(p), ids = new Set(items.flatMap(it => it.ids));
+  for (const i of ids) ce.tf[i] = ENG.mul(ce.tf[i] || [1, 0, 0, 1, 0, 0], M);
+  p.ce = ce;
+  S.hover = null;
+  await applyCE(p);
+  const fresh = cItems(p) || [];
+  setCsel(p.id, fresh.filter(it => it.ids.some(i => ids.has(i))));
+  if (msg) toast(msg);
+}
+function moveMatrix(p, dx, dy, from) {
+  const f = d2u(p), a = f(from[0], from[1]), b = f(from[0] + dx, from[1] + dy);
+  return [1, 0, 0, 1, b[0] - a[0], b[1] - a[1]];
+}
+function scaleMatrix(p, k, anchor) {
+  const [ax, ay] = d2u(p)(anchor[0], anchor[1]);
+  return [k, 0, 0, k, ax * (1 - k), ay * (1 - k)];
+}
+function rotateContent(dir) {
+  const cs = S.csel; if (!cs) return;
+  const p = pageById(cs.pid), u = cselBox();
+  const [cx, cy] = d2u(p)(u.x + u.w / 2, u.y + u.h / 2);
+  const t = -dir * Math.PI / 2, c = Math.round(Math.cos(t)), s = Math.round(Math.sin(t));
+  transformContent(p, cs.items, [c, s, -s, c, cx - cx * c + cy * s, cy - cx * s - cy * c]);
+}
+let nudge = null;
+function nudgeContent(dx, dy) {
+  const cs = S.csel; if (!cs) return;
+  const p = pageById(cs.pid);
+  if (!nudge) nudge = { dx: 0, dy: 0, p, items: cs.items };
+  nudge.dx += dx; nudge.dy += dy;
+  showGhost(p, cs.items, nudge.dx, nudge.dy, 1);
+  clearTimeout(nudge.t);
+  nudge.t = setTimeout(() => {
+    const n = nudge; nudge = null; hideGhost();
+    transformContent(n.p, n.items, moveMatrix(n.p, n.dx, n.dy, [cselBox(n.items).x, cselBox(n.items).y]));
+  }, 450);
+}
+
+/* Vorschau beim Ziehen: Ausschnitt der gerenderten Seite folgt dem Finger */
+function showGhost(p, items, dx, dy, k) {
+  const e = els.get(p.id); if (!e || !e.cv || e.cv.width < 2) return;
+  const [W] = dims(p), z = S.zoom, s = e.cv.width / W, u = cselBox(items);
+  let g = e.ghost;
+  if (!g || g.dataset.key !== JSON.stringify(u)) {
+    if (g) g.remove();
+    g = document.createElement('canvas'); g.className = 'ghost'; g.dataset.key = JSON.stringify(u);
+    g.width = Math.max(1, Math.round(u.w * s)); g.height = Math.max(1, Math.round(u.h * s));
+    const ctx = g.getContext('2d');
+    for (const it of items) {
+      const b = it.box;
+      ctx.drawImage(e.cv, b.x * s, b.y * s, b.w * s, b.h * s, (b.x - u.x) * s, (b.y - u.y) * s, b.w * s, b.h * s);
+    }
+    Object.assign(g.style, { left: u.x * z + 'px', top: u.y * z + 'px', width: u.w * z + 'px', height: u.h * z + 'px' });
+    e.wrap.append(g); e.ghost = g;
+  }
+  g.style.transform = `translate(${dx * z}px, ${dy * z}px) scale(${k})`;
+}
+function hideGhost() { for (const e of els.values()) if (e.ghost) { e.ghost.remove(); e.ghost = null; } }
+
+/* Ausrichtungshilfen: Kanten und Mitten von Seite, Kommentaren und PDF-Inhalten */
+function snapLines(p, skipIds, skipAnnot) {
+  const [W, H] = dims(p), xs = [0, W / 2, W], ys = [0, H / 2, H];
+  for (const a of p.annots) if (a !== skipAnnot) { const b = bbox(a); xs.push(b.x, b.x + b.w / 2, b.x + b.w); ys.push(b.y, b.y + b.h / 2, b.y + b.h); }
+  const items = S.analysis.get(p.src + ':' + p.idx) ? cItems(p) || [] : [];
+  for (const it of items) {
+    if (skipIds && it.ids.some(i => skipIds.has(i))) continue;
+    const b = it.box; if (b.w * b.h > W * H * 0.6) continue;
+    xs.push(b.x, b.x + b.w / 2, b.x + b.w); ys.push(b.y, b.y + b.h / 2, b.y + b.h);
+  }
+  return { xs, ys, W, H };
+}
+function snapBox(lines, b, noSnap) {
+  if (noSnap) return { dx: 0, dy: 0, svg: '' };
+  const tol = 5 / S.zoom;
+  const pick = (cands, vals) => {
+    let best = null;
+    for (const v of vals) for (const c of cands) { const d = c - v; if (Math.abs(d) <= tol && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, at: c }; }
+    return best;
+  };
+  const bx = pick(lines.xs, [b.x, b.x + b.w / 2, b.x + b.w]), by = pick(lines.ys, [b.y, b.y + b.h / 2, b.y + b.h]);
+  let svg = '';
+  if (bx) svg += `<line class="guide" x1="${r2(bx.at)}" y1="0" x2="${r2(bx.at)}" y2="${r2(lines.H)}"/>`;
+  if (by) svg += `<line class="guide" x1="0" y1="${r2(by.at)}" x2="${r2(lines.W)}" y2="${r2(by.at)}"/>`;
+  return { dx: bx ? bx.d : 0, dy: by ? by.d : 0, svg };
 }
 function drawCUI(p) { const e = p && els.get(p.id); if (e) { const g = $('.cui', e.svg); if (g) g.innerHTML = cuiSVG(p); } }
 function setCsel(pid, items) {
@@ -478,7 +595,7 @@ function deleteContent() {
   const p = pageById(cs.pid); if (!p) return;
   pushHist();
   const ce = newCE(p);
-  for (const it of cs.items) for (const i of it.ids) { if (!ce.del.includes(i)) ce.del.push(i); delete ce.rep[i]; }
+  for (const it of cs.items) for (const i of it.ids) { if (!ce.del.includes(i)) ce.del.push(i); delete ce.rep[i]; delete ce.tf[i]; }
   p.ce = ce;
   const n = cs.items.length;
   S.csel = null; S.hover = null;
@@ -883,6 +1000,9 @@ function renderProps() {
   const cs = S.csel && S.tool === 'objects' ? S.csel.items : null;
   const oneText = cs && cs.length === 1 && cs[0].kind === 'text';
   $('#cEditBtn').hidden = !oneText;
+  $('#cRotL').hidden = $('#cRotR').hidden = !cs;
+  const selA = !cs && !S.cedit ? selAnnot() : null;
+  $('#zFront').hidden = $('#zBack').hidden = !selA;
   if (cs || S.cedit) {
     $$('[data-for]', propbar).forEach(el => { el.hidden = true; });
     $('#dupBtn').hidden = true; $('#delBtn').hidden = !cs;
@@ -890,7 +1010,7 @@ function renderProps() {
     const kinds = {};
     cs.forEach(it => { kinds[it.kind] = (kinds[it.kind] || 0) + 1; });
     $('#pTarget').textContent = cs.length === 1 ? 'Auswahl · ' + KIND_NAMES[cs[0].kind] : `Auswahl · ${cs.length} Elemente`;
-    $('#pHint').textContent = oneText ? `„${cs[0].text.slice(0, 60)}“ · Entf entfernt · Doppelklick bearbeitet` : Object.entries(kinds).map(([k, n]) => `${n}× ${KIND_NAMES[k]}`).join(' · ') + ' · Entf entfernt alles';
+    $('#pHint').textContent = (oneText ? `„${cs[0].text.slice(0, 50)}“ · Doppelklick bearbeitet` : Object.entries(kinds).map(([k, n]) => `${n}× ${KIND_NAMES[k]}`).join(' · ')) + ' · Ziehen verschiebt, Ecke skaliert, Entf entfernt';
     return;
   }
   const tg = propTarget();
@@ -914,6 +1034,7 @@ function renderProps() {
   if ('sw' in o) { $('#strokeIn').value = o.sw; $('#strokeOut').textContent = o.sw + ' pt'; }
   if ('op' in o) { $('#opIn').value = o.op; $('#opOut').textContent = o.op + ' %'; }
   if (type === 'stamp') $('#stampSel').value = STAMPS.some(s => s[0] === o.text) ? o.text : (o.text === today() ? '{datum}' : '');
+  if ('font' in o) $('#bgSel').value = o.bg || '';
   if ('font' in o) { $('#fontSel').value = o.font; if (document.activeElement !== $('#sizeIn')) $('#sizeIn').value = o.size; $('#boldBtn').setAttribute('aria-pressed', String(!!o.bold)); }
 }
 function setProp(k, v, continuous) {
@@ -958,6 +1079,15 @@ pagesEl.addEventListener('pointerdown', e => {
   const t = S.tool;
   if (t === 'objects') {
     e.preventDefault();
+    if (S.csel && S.csel.pid === p.id && onCselHandle(pt)) {
+      drag = { mode: 'cresize', p, start: pt, u: cselBox(), items: S.csel.items, k: 1 };
+      return;
+    }
+    const startMove = items => {
+      drag = { mode: 'cmove', p, start: pt, items, dx: 0, dy: 0, moved: false, lines: snapLines(p, new Set(items.flatMap(i => i.ids))) };
+    };
+    // Innerhalb der Auswahl ziehen verschiebt, sonst Rahmen aufziehen (Antippen wählt ein Element)
+    if (S.csel && S.csel.pid === p.id && inCsel(pt) && !e.shiftKey) { startMove(S.csel.items); return; }
     drag = { mode: 'marquee', p, start: pt, shift: e.shiftKey, moved: false, r: null };
     return;
   }
@@ -972,7 +1102,7 @@ pagesEl.addEventListener('pointerdown', e => {
     const hit = hitTest(p, pt);
     if (hit) {
       const was = S.sel && S.sel.aid === hit.id;
-      select(p.id, hit.id); drag = { mode: 'move', p, a: hit, orig: clone(hit), start: pt, moved: false, tapNote: hit.t === 'note' && was };
+      select(p.id, hit.id); drag = { mode: 'move', p, a: hit, orig: clone(hit), start: pt, moved: false, tapNote: hit.t === 'note' && was, lines: snapLines(p, null, hit) };
       S.touchDrag = e.pointerType === 'touch'; e.preventDefault();
     }
     else select(null);
@@ -997,7 +1127,7 @@ pagesEl.addEventListener('pointerdown', e => {
   if (t === 'text') {
     const hit = hitTest(p, pt, 'text');
     if (hit) editText(p, hit, false);
-    else { const tp = TP.text; editText(p, { id: uid(), t: 'text', x: pt[0], y: pt[1] - tp.size * 0.65, text: '', color: tp.color, size: tp.size, font: tp.font, bold: tp.bold }, true); }
+    else { const tp = TP.text; editText(p, { id: uid(), t: 'text', x: pt[0], y: pt[1] - tp.size * 0.65, text: '', color: tp.color, size: tp.size, font: tp.font, bold: tp.bold, bg: tp.bg || '' }, true); }
     return;
   }
   if (t === 'edittext') {
@@ -1042,6 +1172,24 @@ window.addEventListener('pointermove', e => {
   }
   const el = els.get(drag.p.id); if (!el) return;
   const pt = ptIn(e, el), a = drag.a;
+  if (drag.mode === 'cmove') {
+    let dx = pt[0] - drag.start[0], dy = pt[1] - drag.start[1];
+    if (!drag.moved && Math.hypot(dx, dy) * S.zoom < 4) return;
+    drag.moved = true;
+    const u = cselBox(drag.items), sn = snapBox(drag.lines, { x: u.x + dx, y: u.y + dy, w: u.w, h: u.h }, e.altKey);
+    dx += sn.dx; dy += sn.dy; drag.dx = dx; drag.dy = dy;
+    showGhost(drag.p, drag.items, dx, dy, 1);
+    $('.draft', el.svg).innerHTML = sn.svg;
+    $('#stCursor').textContent = `Δ ${Math.round(dx * 25.4 / 72)} · ${Math.round(dy * 25.4 / 72)} mm`;
+    return;
+  }
+  if (drag.mode === 'cresize') {
+    const u = drag.u;
+    drag.k = clamp(Math.max((pt[0] - u.x) / Math.max(u.w, 1), (pt[1] - u.y) / Math.max(u.h, 1)), 0.1, 10);
+    showGhost(drag.p, drag.items, 0, 0, drag.k);
+    $('#stCursor').textContent = `${Math.round(drag.k * 100)} %`;
+    return;
+  }
   if (drag.mode === 'marquee') {
     const x = Math.min(pt[0], drag.start[0]), y = Math.min(pt[1], drag.start[1]), w = Math.abs(pt[0] - drag.start[0]), h = Math.abs(pt[1] - drag.start[1]);
     if (!drag.moved && Math.hypot(w, h) * S.zoom < 4) return;
@@ -1072,9 +1220,15 @@ window.addEventListener('pointermove', e => {
   }
   const dx = pt[0] - drag.start[0], dy = pt[1] - drag.start[1];
   if (!drag.moved) { if (Math.hypot(dx, dy) * S.zoom < 2) return; pushHist(); drag.moved = true; }
-  let next;
-  if (drag.mode === 'move') next = translated(drag.orig, dx, dy);
-  else {
+  let next, guides = '';
+  if (drag.mode === 'move') {
+    next = translated(drag.orig, dx, dy);
+    if (drag.lines) {
+      const sn = snapBox(drag.lines, bbox(next), e.altKey);
+      if (sn.dx || sn.dy) next = translated(drag.orig, dx + sn.dx, dy + sn.dy);
+      guides = sn.svg;
+    }
+  } else {
     const ob = drag.ob;
     let nw = Math.max(4, ob.w + dx), nh = Math.max(4, ob.h + dy);
     if (['text', 'img', 'check', 'cross', 'stamp', 'wm', 'note'].includes(a.t) || e.shiftKey) { const f = Math.max(nw / ob.w, nh / ob.h); nw = ob.w * f; nh = ob.h * f; }
@@ -1082,10 +1236,22 @@ window.addEventListener('pointermove', e => {
   }
   Object.assign(a, next);
   drawAnnots(drag.p);
+  if (guides) $('.draft', el.svg).innerHTML = guides;
 });
 function endDrag() {
   if (!drag) return;
   const d = drag; drag = null;
+  if (d.mode === 'cmove') {
+    drawDraft(d.p, null);
+    if (!d.moved) { const it = itemAt(d.p, d.start); if (it && d.items.length > 1) setCsel(d.p.id, [it]); return; }
+    transformContent(d.p, d.items, moveMatrix(d.p, d.dx, d.dy, d.start)).finally(hideGhost);
+    return;
+  }
+  if (d.mode === 'cresize') {
+    if (Math.abs(d.k - 1) < 0.01) { hideGhost(); return; }
+    transformContent(d.p, d.items, scaleMatrix(d.p, d.k, [d.u.x, d.u.y])).finally(hideGhost);
+    return;
+  }
   if (d.mode === 'marquee') {
     drawDraft(d.p, null);
     const items = cItems(d.p);
@@ -1116,14 +1282,14 @@ function endDrag() {
     const ok = a.t === 'pen' ? a.pts.length >= 1 : (a.t === 'line' || a.t === 'arrow') ? Math.hypot(a.x2 - a.x1, a.y2 - a.y1) > 2 : a.w > 2 && a.h > 2;
     if (ok) { pushHist(); d.p.annots.push(a); markDirty(); drawAnnots(d.p); }
     else if (SNAP_TOOLS.has(d.tool)) snapToText(d.p, d.start, d.tool);
-  } else if (d.moved) { markDirty(); renderProps(); }
+  } else if (d.moved) { drawDraft(d.p, null); markDirty(); renderProps(); }
   else if (d.tapNote) editNote(d.p, d.a);
 }
 function cancelDrag() {
   S.touchDrag = false;
   if (!drag) return;
   const d = drag; drag = null;
-  if (d.mode === 'draw' || d.mode === 'marquee') drawDraft(d.p, null);
+  if (d.mode === 'draw' || d.mode === 'marquee' || d.mode === 'cmove' || d.mode === 'cresize') { drawDraft(d.p, null); hideGhost(); }
   else if (d.moved) { Object.assign(d.a, d.orig); if (S.hist.length) S.hist.pop(); updateUndo(); drawAnnots(d.p); }
 }
 window.addEventListener('pointerup', () => { S.touchDrag = false; endDrag(); });
@@ -1735,6 +1901,10 @@ async function buildPdf(pageList) {
     for (const a of p.annots) {
       if (a.t === 'text') {
         const font = await getFont(a.font, a.bold), f = FONTS[a.font];
+        if (a.bg) {
+          const b = bbox(a), pd = a.size * 0.18, x = b.x - pd, y = b.y - pd * 0.4, w = b.w + 2 * pd, h = b.h + pd * 0.8;
+          pg.drawSvgPath(dOf([['M', x, y], ['L', x + w, y], ['L', x + w, y + h], ['L', x, y + h], ['Z']], svgMap), { x: 0, y: 0, color: hex2rgb(a.bg) });
+        }
         a.text.split('\n').forEach((ln, i) => {
           if (!ln) return;
           const [x, y] = T(a.x, a.y + f.bl * a.size + i * LH * a.size);
@@ -1932,6 +2102,18 @@ function bindUI() {
   $('#pgBlank').onclick = insertBlank; $('#pgExtract').onclick = extractPages; $('#pgDelete').onclick = deletePages;
   $('#delBtn').onclick = () => { if (S.csel) deleteContent(); else deleteSel(); };
   $('#cEditBtn').onclick = () => { if (S.csel && S.csel.items.length === 1) editContentText(pageById(S.csel.pid), S.csel.items[0]); };
+  $('#cRotL').onclick = () => rotateContent(-1);
+  $('#cRotR').onclick = () => rotateContent(1);
+  const zorder = front => {
+    const a = selAnnot(); if (!a) return;
+    const p = pageById(S.sel.pid), i = p.annots.indexOf(a);
+    if ((front && i === p.annots.length - 1) || (!front && i === 0)) return;
+    pushHist(); p.annots.splice(i, 1); if (front) p.annots.push(a); else p.annots.unshift(a);
+    drawAnnots(p); markDirty(); toast(front ? 'In den Vordergrund gebracht' : 'In den Hintergrund gelegt');
+  };
+  $('#zFront').onclick = () => zorder(true);
+  $('#zBack').onclick = () => zorder(false);
+  $('#bgSel').addEventListener('change', e => { setProp('bg', e.target.value); if (S.editing) S.editing.ta.focus(); });
   $('#dupBtn').onclick = () => { const a = selAnnot(); if (a) pasteAnnot(a, 12); };
 
   $('#btnMore').onclick = e => { e.stopPropagation(); if ($('#menu').hidden) openMenu(); else closeMenu(); };
@@ -2087,6 +2269,12 @@ function bindUI() {
     }
     if (e.key === 'Escape') { if (S.csel) setCsel(null, []); else if (S.sel) select(null); else setTool('select'); return; }
     if (e.key === 'Enter' && S.csel && S.csel.items.length === 1 && S.csel.items[0].kind === 'text') { e.preventDefault(); editContentText(pageById(S.csel.pid), S.csel.items[0]); return; }
+    if (e.key.startsWith('Arrow') && S.csel && S.tool === 'objects') {
+      e.preventDefault();
+      const st = e.shiftKey ? 10 : 1;
+      nudgeContent(e.key === 'ArrowLeft' ? -st : e.key === 'ArrowRight' ? st : 0, e.key === 'ArrowUp' ? -st : e.key === 'ArrowDown' ? st : 0);
+      return;
+    }
     if (e.key.startsWith('Arrow') && selAnnot()) {
       e.preventDefault();
       const st = e.shiftKey ? 10 : 1, dx = e.key === 'ArrowLeft' ? -st : e.key === 'ArrowRight' ? st : 0, dy = e.key === 'ArrowUp' ? -st : e.key === 'ArrowDown' ? st : 0;

@@ -274,13 +274,19 @@ function createContentEngine(PL) {
       fontCache.set(name, f);
       return f;
     };
-    let gs = { ctm: [1, 0, 0, 1, 0, 0], fill: [0, 0, 0] };
+    /* Grafikzustand inkl. Quelltext der Zustandsoperatoren, damit verschobene Objekte
+       später mit identischem Aussehen neu ausgegeben werden können */
+    let gs = { ctm: [1, 0, 0, 1, 0, 0], fill: [0, 0, 0], fillCs: '', fillSrc: '', strokeCs: '', strokeSrc: '', line: {}, gsSrc: [], clips: [] };
     const stack = [];
+    const copyGs = g => ({ ...g, ctm: g.ctm.slice(), fill: g.fill.slice(), line: { ...g.line }, gsSrc: g.gsSrc.slice() });
     let ts = { Tc: 0, Tw: 0, Th: 1, TL: 0, Tf: null, Tfs: 0, Tr: 0, Ts: 0 };
-    let Tm = [1, 0, 0, 1, 0, 0], Tlm = [1, 0, 0, 1, 0, 0];
-    let path = [], bt = -1, btCount = 0;
+    let Tm = [1, 0, 0, 1, 0, 0], Tlm = [1, 0, 0, 1, 0, 0], lineX = 0;
+    let path = [], ps = -1, clipOp = -1, bt = -1, btCount = 0;
     const objects = [];
+    const src = o => str.slice(o.start, o.end);
     const setFill = a => { const v = a.filter(x => typeof x === 'number'); if (v.length === 1) gs.fill = [v[0], v[0], v[0]]; else if (v.length === 3) gs.fill = v; else if (v.length === 4) gs.fill = cmyk2rgb(...v); };
+    const stateOf = () => ({ fill: gs.fillCs + ' ' + gs.fillSrc, stroke: gs.strokeCs + ' ' + gs.strokeSrc, line: Object.values(gs.line).join(' '), gs: gs.gsSrc.join(' '), clips: gs.clips, ctm: gs.ctm.slice() });
+    const startPath = idx => { if (!path.length && ps < 0) ps = idx; };
 
     function show(op, idx, items) {
       const f = ts.Tf ? getFont(ts.Tf) : getFont('');
@@ -304,21 +310,29 @@ function createContentEngine(PL) {
       objects.push({
         i: idx, kind: 'text', op, bbox, text, codes, font: ts.Tf, adv: x, bt,
         base: tp(M, 0, ts.Ts), end: tp(M, x, ts.Ts), dir: [M[0], M[1]], fs: fsEff,
-        st: { Tfs, Th, Tc: ts.Tc, Tw: ts.Tw, Tr: ts.Tr }, fill: gs.fill.slice(), blank: !text.trim(),
+        st: { Tfs, Th, Tc: ts.Tc, Tw: ts.Tw, Tr: ts.Tr, TL: ts.TL, Ts: ts.Ts }, fill: gs.fill.slice(), blank: !text.trim(),
+        Tm: Tm.slice(), Tlm: Tlm.slice(), lineX, items, gstate: stateOf(),
       });
-      Tm = mul([1, 0, 0, 1, x, 0], Tm);
+      Tm = mul([1, 0, 0, 1, x, 0], Tm); lineX += x;
     }
-    const nextLine = () => { Tlm = mul([1, 0, 0, 1, 0, -ts.TL], Tlm); Tm = Tlm.slice(); };
+    const nextLine = () => { Tlm = mul([1, 0, 0, 1, 0, -ts.TL], Tlm); Tm = Tlm.slice(); lineX = 0; };
 
     ops.forEach((o, idx) => {
       const a = o.args;
       switch (o.op) {
-        case 'q': stack.push({ ctm: gs.ctm.slice(), fill: gs.fill.slice() }); break;
+        case 'q': stack.push(copyGs(gs)); break;
         case 'Q': if (stack.length) gs = stack.pop(); break;
         case 'cm': if (a.length >= 6) gs.ctm = mul(a.slice(0, 6), gs.ctm); break;
-        case 'g': case 'rg': case 'k': case 'sc': case 'scn': setFill(a); break;
-        case 'cs': gs.fill = [0, 0, 0]; break;
-        case 'BT': Tm = [1, 0, 0, 1, 0, 0]; Tlm = [1, 0, 0, 1, 0, 0]; bt = btCount++; break;
+        case 'g': case 'rg': case 'k': gs.fillCs = ''; gs.fillSrc = src(o); setFill(a); break;
+        case 'sc': case 'scn': gs.fillSrc = src(o); setFill(a); break;
+        case 'cs': gs.fillCs = src(o); gs.fillSrc = ''; gs.fill = [0, 0, 0]; break;
+        case 'G': case 'RG': case 'K': gs.strokeCs = ''; gs.strokeSrc = src(o); break;
+        case 'SC': case 'SCN': gs.strokeSrc = src(o); break;
+        case 'CS': gs.strokeCs = src(o); gs.strokeSrc = ''; break;
+        case 'w': case 'J': case 'j': case 'M': case 'd': case 'ri': case 'i': gs.line[o.op] = src(o); break;
+        case 'gs': if (gs.gsSrc.length < 6) gs.gsSrc = gs.gsSrc.concat(src(o)); break;
+        case 'W': case 'W*': clipOp = idx; break;
+        case 'BT': Tm = [1, 0, 0, 1, 0, 0]; Tlm = [1, 0, 0, 1, 0, 0]; lineX = 0; bt = btCount++; break;
         case 'ET': bt = -1; break;
         case 'Tc': ts.Tc = a[0] || 0; break;
         case 'Tw': ts.Tw = a[0] || 0; break;
@@ -327,22 +341,27 @@ function createContentEngine(PL) {
         case 'Ts': ts.Ts = a[0] || 0; break;
         case 'Tr': ts.Tr = a[0] || 0; break;
         case 'Tf': ts.Tf = a[0] && a[0].name; ts.Tfs = a[1] || 0; break;
-        case 'Td': Tlm = mul([1, 0, 0, 1, a[0] || 0, a[1] || 0], Tlm); Tm = Tlm.slice(); break;
-        case 'TD': ts.TL = -(a[1] || 0); Tlm = mul([1, 0, 0, 1, a[0] || 0, a[1] || 0], Tlm); Tm = Tlm.slice(); break;
-        case 'Tm': if (a.length >= 6) { Tlm = a.slice(0, 6); Tm = Tlm.slice(); } break;
+        case 'Td': Tlm = mul([1, 0, 0, 1, a[0] || 0, a[1] || 0], Tlm); Tm = Tlm.slice(); lineX = 0; break;
+        case 'TD': ts.TL = -(a[1] || 0); Tlm = mul([1, 0, 0, 1, a[0] || 0, a[1] || 0], Tlm); Tm = Tlm.slice(); lineX = 0; break;
+        case 'Tm': if (a.length >= 6) { Tlm = a.slice(0, 6); Tm = Tlm.slice(); lineX = 0; } break;
         case 'T*': nextLine(); break;
         case 'Tj': show('Tj', idx, [a[0]]); break;
         case 'TJ': show('TJ', idx, Array.isArray(a[0]) ? a[0] : []); break;
         case "'": nextLine(); show("'", idx, [a[0]]); break;
         case '"': ts.Tw = a[0] || 0; ts.Tc = a[1] || 0; nextLine(); show('"', idx, [a[2]]); break;
-        case 'm': case 'l': path.push(tp(gs.ctm, a[0], a[1])); break;
-        case 'c': path.push(tp(gs.ctm, a[0], a[1]), tp(gs.ctm, a[2], a[3]), tp(gs.ctm, a[4], a[5])); break;
-        case 'v': case 'y': path.push(tp(gs.ctm, a[0], a[1]), tp(gs.ctm, a[2], a[3])); break;
-        case 're': { const [x, y, w, h] = a; path.push(tp(gs.ctm, x, y), tp(gs.ctm, x + w, y), tp(gs.ctm, x, y + h), tp(gs.ctm, x + w, y + h)); break; }
-        case 'S': case 's': case 'f': case 'F': case 'f*': case 'B': case 'B*': case 'b': case 'b*':
-          if (path.length) objects.push({ i: idx, kind: 'path', op: o.op, bbox: boxOf(path), fill: gs.fill.slice() });
-          path = []; break;
-        case 'n': path = []; break;
+        case 'm': case 'l': startPath(idx); path.push(tp(gs.ctm, a[0], a[1])); break;
+        case 'c': startPath(idx); path.push(tp(gs.ctm, a[0], a[1]), tp(gs.ctm, a[2], a[3]), tp(gs.ctm, a[4], a[5])); break;
+        case 'v': case 'y': startPath(idx); path.push(tp(gs.ctm, a[0], a[1]), tp(gs.ctm, a[2], a[3])); break;
+        case 'h': startPath(idx); break;
+        case 're': { startPath(idx); const [x, y, w, h] = a; path.push(tp(gs.ctm, x, y), tp(gs.ctm, x + w, y), tp(gs.ctm, x, y + h), tp(gs.ctm, x + w, y + h)); break; }
+        case 'S': case 's': case 'f': case 'F': case 'f*': case 'B': case 'B*': case 'b': case 'b*': case 'n': {
+          const st = stateOf();
+          if (clipOp >= 0 && ps >= 0 && path.length) {
+            gs.clips = gs.clips.concat({ src: str.slice(ops[ps].start, ops[clipOp].end) + ' n', ctm: gs.ctm.slice(), bbox: boxOf(path) });
+          }
+          if (o.op !== 'n' && path.length && ps >= 0) objects.push({ i: idx, kind: 'path', op: o.op, ps, bbox: boxOf(path), fill: gs.fill.slice(), gstate: st, clipped: clipOp >= 0 });
+          path = []; ps = -1; clipOp = -1; break;
+        }
         case 'Do': {
           const nm = a[0] && a[0].name;
           const xo = look(xobjs, nm);
@@ -351,14 +370,14 @@ function createContentEngine(PL) {
             const bb = arr(xo.dict.lookup(PDFName.of('BBox'))).map(num);
             const mx = arr(xo.dict.lookup(PDFName.of('Matrix'))).map(num);
             const M = mul(mx.length === 6 ? mx : [1, 0, 0, 1, 0, 0], gs.ctm);
-            if (bb.length === 4) objects.push({ i: idx, kind: 'form', bbox: boxOf([tp(M, bb[0], bb[1]), tp(M, bb[2], bb[1]), tp(M, bb[0], bb[3]), tp(M, bb[2], bb[3])]) });
+            if (bb.length === 4) objects.push({ i: idx, kind: 'form', bbox: boxOf([tp(M, bb[0], bb[1]), tp(M, bb[2], bb[1]), tp(M, bb[0], bb[3]), tp(M, bb[2], bb[3])]), gstate: stateOf() });
           } else {
             const M = gs.ctm;
-            objects.push({ i: idx, kind: 'image', bbox: boxOf([tp(M, 0, 0), tp(M, 1, 0), tp(M, 0, 1), tp(M, 1, 1)]) });
+            objects.push({ i: idx, kind: 'image', bbox: boxOf([tp(M, 0, 0), tp(M, 1, 0), tp(M, 0, 1), tp(M, 1, 1)]), gstate: stateOf() });
           }
           break;
         }
-        case 'BI': { const M = gs.ctm; objects.push({ i: idx, kind: 'image', bbox: boxOf([tp(M, 0, 0), tp(M, 1, 0), tp(M, 0, 1), tp(M, 1, 1)]) }); break; }
+        case 'BI': { const M = gs.ctm; objects.push({ i: idx, kind: 'image', bbox: boxOf([tp(M, 0, 0), tp(M, 1, 0), tp(M, 0, 1), tp(M, 1, 1)]), gstate: stateOf() }); break; }
       }
     });
     return { ops, objects, fonts: fontCache };
@@ -442,15 +461,61 @@ function createContentEngine(PL) {
     return `${prefixFor(o)}[<${hex}> ${comp}] TJ`;
   }
   function canEncode(an, o, text) { return !!encodeText(an, o, text); }
+
+  /* ---------- Verschieben, Skalieren, Drehen ----------
+     Ein transformiertes Objekt wird an seiner alten Stelle entfernt und am Ende der Seite
+     als Kopie neu gezeichnet: mit Matrix CTM × A, seinem Farb- und Linienzustand und den
+     eigenen Beschneidungspfaden. So bleibt es sichtbar, auch wenn es aus einem
+     Beschneidungsbereich herausgeschoben wird. */
+  const inv = m => { const d = m[0] * m[3] - m[1] * m[2] || 1e-9; return [m[3] / d, -m[1] / d, -m[2] / d, m[0] / d, (m[2] * m[5] - m[3] * m[4]) / d, (m[1] * m[4] - m[0] * m[5]) / d]; };
+  const m6 = m => m.map(fmt).join(' ');
+  const isId = A => !A || (Math.abs(A[0] - 1) < 1e-9 && Math.abs(A[1]) < 1e-9 && Math.abs(A[2]) < 1e-9 && Math.abs(A[3] - 1) < 1e-9 && Math.abs(A[4]) < 1e-6 && Math.abs(A[5]) < 1e-6);
+  const area = b => Math.max(0, b[2] - b[0]) * Math.max(0, b[3] - b[1]);
+  function xbox(b, A) { return isId(A) ? b : boxOf([tp(A, b[0], b[1]), tp(A, b[2], b[1]), tp(A, b[0], b[3]), tp(A, b[2], b[3])]); }
+  const pdfName = n => '/' + String(n).replace(/[^!-~]|[#()<>[\]{}/%]/g, c => '#' + c.charCodeAt(0).toString(16).padStart(2, '0'));
+  const hexStr = bytes => '<' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('') + '>';
+  function itemsSrc(items) { return items.map(it => (typeof it === 'number' ? fmt(it) : it && it.str ? hexStr(it.str) : '')).join(' '); }
+  function copyText(an, str, o, A, repText) {
+    const g = o.gstate || { fill: '', stroke: '', line: '', gs: '', clips: [], ctm: [1, 0, 0, 1, 0, 0] };
+    let s = 'q ';
+    // nur eng anliegende Beschneidungen mitnehmen (z. B. zugeschnittene Bilder), nicht ganze Spalten oder Seiten
+    for (const c of g.clips || []) {
+      if (area(c.bbox) > area(o.bbox) * 2.5 + 4) continue;
+      const M = mul(c.ctm, A);
+      s += `${m6(M)} cm ${c.src} ${m6(inv(M))} cm `;
+    }
+    const M = mul(o.kind === 'text' ? g.ctm : (o.gstate ? o.gstate.ctm : [1, 0, 0, 1, 0, 0]), A);
+    s += `${m6(M)} cm ${g.gs} ${g.line} ${g.fill} ${g.stroke} `;
+    if (o.kind === 'path') s += str.slice(an.ops[o.ps].start, an.ops[o.i].end);
+    else if (o.kind === 'text') {
+      let items = itemsSrc(o.items);
+      if (repText != null) {
+        const enc = encodeText(an, o, repText);
+        if (enc) items = hexStr(enc.codes.flatMap(c => (enc.f.bpc === 2 ? [c >> 8, c & 255] : [c])));
+      }
+      const st = o.st;
+      s += `BT ${pdfName(o.font)} ${fmt(st.Tfs)} Tf ${fmt(st.Tc)} Tc ${fmt(st.Tw)} Tw ${fmt(st.Th * 100)} Tz ${fmt(st.TL)} TL ${fmt(st.Ts)} Ts ${fmt(st.Tr)} Tr ${m6(o.Tm)} Tm [${items}] TJ ET`;
+    } else s += str.slice(an.ops[o.i].start, an.ops[o.i].end);
+    return s + ' Q';
+  }
   function applyEdits(str, an, ce) {
-    if (!ce || (!ce.del?.length && !ce.rep)) return str;
+    if (!ce || (!ce.del?.length && !ce.rep && !ce.tf)) return str;
     const byIdx = new Map(an.objects.map(o => [o.i, o]));
-    const repl = new Map();
-    for (const i of ce.del || []) { const o = byIdx.get(i); if (o) repl.set(i, deletionText(o, str.slice(an.ops[i].start, an.ops[i].end))); }
-    for (const [k, t] of Object.entries(ce.rep || {})) {
-      const i = +k, o = byIdx.get(i); if (!o) continue;
+    const orig = i => str.slice(an.ops[i].start, an.ops[i].end);
+    const del = new Set(ce.del || []), rep = ce.rep || {}, tf = ce.tf || {};
+    const repl = new Map(), copies = [];
+    for (const i of del) { const o = byIdx.get(i); if (o) repl.set(i, deletionText(o, orig(i))); }
+    for (const [k, A] of Object.entries(tf)) {
+      const i = +k, o = byIdx.get(i);
+      if (!o || del.has(i) || isId(A)) continue;
+      repl.set(i, deletionText(o, orig(i)));
+      copies.push([i, A]);
+    }
+    for (const [k, t] of Object.entries(rep)) {
+      const i = +k, o = byIdx.get(i);
+      if (!o || del.has(i) || (tf[k] && !isId(tf[k]))) continue;
       const r = replacementText(an, o, t);
-      repl.set(i, r == null ? deletionText(o, str.slice(an.ops[i].start, an.ops[i].end)) : r);
+      repl.set(i, r == null ? deletionText(o, orig(i)) : r);
     }
     const idxs = [...repl.keys()].sort((a, b) => an.ops[a].start - an.ops[b].start);
     let out = '', pos = 0;
@@ -459,7 +524,10 @@ function createContentEngine(PL) {
       out += str.slice(pos, op.start) + ' ' + repl.get(i) + ' ';
       pos = op.end;
     }
-    return out + str.slice(pos);
+    out += str.slice(pos);
+    if (!copies.length) return out;
+    copies.sort((a, b) => a[0] - b[0]);
+    return 'q\n' + out + '\nQ\n' + copies.map(([i, A]) => copyText(an, str, byIdx.get(i), A, rep[i])).join('\n') + '\n';
   }
 
   /* Öffentliche Schnittstelle */
@@ -475,6 +543,6 @@ function createContentEngine(PL) {
   }
   const setStdWidths = fn => { stdWidth = fn; };
   const STD_FONTS = ['Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique', 'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic', 'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique'];
-  return { analysePage, editPage, applyEdits, canEncode, joinText, lex, parseCMap, setStdWidths, STD_FONTS };
+  return { analysePage, editPage, applyEdits, canEncode, joinText, lex, parseCMap, setStdWidths, STD_FONTS, xbox, mul, inv, isId };
 }
 if (typeof module !== 'undefined') module.exports = createContentEngine;

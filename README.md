@@ -19,7 +19,12 @@ Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du 
 ## Funktionen
 
 **Inhalte der PDF direkt bearbeiten**
-- **Inhalte (M):** Texte, Flächen, Bilder und Icons der PDF antippen oder mit einem Rahmen auswählen und mit `Entf` wirklich aus der Datei entfernen. Der Hintergrund bleibt erhalten, es entsteht kein weißer Kasten.
+- **Inhalte (M):** Texte, Flächen, Bilder und Icons der PDF antippen oder mit einem Rahmen auswählen. Dann:
+  - **verschieben:** in die Auswahl tippen und ziehen, oder mit den Pfeiltasten (`Umschalt` = 10 pt)
+  - **skalieren:** am Eckgriff ziehen
+  - **drehen:** mit den Dreh-Knöpfen in der Leiste um 90°
+  - **entfernen:** mit `Entf`. Der Hintergrund bleibt erhalten, es entsteht kein weißer Kasten.
+- **Hilfslinien:** Beim Verschieben rasten Elemente an Seitenrand, Seitenmitte und an Kanten anderer Elemente ein. `Alt` gedrückt halten schaltet das Einrasten ab.
 - **Text ändern (E):** Vorhandenen Text antippen und direkt umschreiben. Sind alle Zeichen in der eingebetteten Schrift vorhanden, bleibt die Originalschrift. Sonst wird die Zeile in Helvetica neu gesetzt. Leer lassen entfernt die Zeile.
 
 **Kommentieren**
@@ -27,7 +32,8 @@ Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du 
 - **Notizen:** Als echter PDF-Kommentar gespeichert, sichtbar in Acrobat, Vorschau und Browsern.
 - **Stempel:** Genehmigt, Erledigt, Bezahlt, Entwurf, Kopie, Vertraulich, Abgelehnt, Dringend und das heutige Datum.
 - Stift, Rechteck, Ellipse, Linie, Pfeil, Haken und Kreuz, Weiß abdecken.
-- Neuer Text mit Schriftart, Größe, Fett und Farbe.
+- Neuer Text mit Schriftart, Größe, Fett, Farbe und farbigem Hintergrund.
+- Eigene Elemente in den Vorder- oder Hintergrund legen.
 - Bilder einfügen, Unterschrift zeichnen oder tippen.
 
 **Dokument und Seiten**
@@ -83,6 +89,7 @@ Verwendete Bibliotheken (per CDN geladen, offline aus dem Cache): [pdf.js](https
 2. Jeder Text-, Flächen- und Bild-Operator bekommt eine Box in Seitenkoordinaten. Textstücke auf derselben Grundlinie werden zu Zeilen zusammengefasst.
 3. Beim Entfernen wird der Operator im Strom ersetzt: Flächen enden ohne Zeichnen (`n`), Bilder fallen weg, und Text wird durch einen gleich langen Leerschritt ersetzt, damit nachfolgender Text an seiner Stelle bleibt.
 4. Geänderter Text wird mit den Zeichencodes der eingebetteten Schrift neu geschrieben.
+5. Verschobene, skalierte oder gedrehte Objekte werden an der alten Stelle entfernt und am Ende der Seite als Kopie neu gezeichnet, mit der Matrix `CTM × A`, ihrem Farb- und Linienzustand und eng anliegenden Beschneidungspfaden. So bleiben sie auch sichtbar, wenn sie aus einem Beschneidungsbereich herausgeschoben werden.
 
 ## Grenzen
 

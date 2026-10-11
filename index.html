@@ -131,6 +131,9 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .ov .handle{fill:#fff;stroke:var(--accent);stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:nwse-resize}
 .ov .hit{fill:#ff9f1c;fill-opacity:.28}
 .ov .hit.on{fill-opacity:.55;stroke:#d97a00;stroke-width:1;vector-effect:non-scaling-stroke}
+.ghost{position:absolute;z-index:2;transform-origin:0 0;pointer-events:none;opacity:.92;outline:1.5px solid var(--accent);box-shadow:0 8px 24px rgb(0 0 0 / .25)}
+.ov .guide{stroke:#e0368c;stroke-width:1;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
+.ov .cunion{fill:none;stroke:var(--accent);stroke-width:1;stroke-dasharray:5 3;vector-effect:non-scaling-stroke}
 .ov .csel{fill:var(--accent);fill-opacity:.12;stroke:var(--accent);stroke-width:1.5;vector-effect:non-scaling-stroke}
 .ov .chov{fill:none;stroke:var(--accent);stroke-width:1;stroke-dasharray:3 2;vector-effect:non-scaling-stroke}
 .ov .marq{fill:var(--accent);fill-opacity:.08;stroke:var(--accent);stroke-width:1;stroke-dasharray:5 3;vector-effect:non-scaling-stroke}
@@ -332,10 +335,17 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
     </label>
     <label class="prop" data-for="font"><input class="field num" type="number" id="sizeIn" min="4" max="144" step="0.5" aria-label="Schriftgröße"> pt</label>
     <button class="ibtn boldbtn" data-for="font" id="boldBtn" title="Fett" aria-label="Fett" aria-pressed="false">B</button>
+    <label class="prop" data-for="font">Hintergrund
+      <select class="field" id="bgSel"><option value="">Ohne</option><option value="#ffffff">Weiß</option><option value="#fff3a8">Gelb</option><option value="#e3e9fb">Hellblau</option><option value="#fde2e0">Rosa</option></select>
+    </label>
     <label class="prop" data-for="stamp">Stempel <select class="field" id="stampSel"></select></label>
     <span class="hint" id="pHint"></span>
     <span class="grow"></span>
     <button class="ibtn" id="cEditBtn" title="Text bearbeiten (Enter)" aria-label="Text bearbeiten" hidden><i data-i="edittext"></i></button>
+    <button class="ibtn" id="cRotL" title="Auswahl links drehen" aria-label="Auswahl links drehen" hidden><i data-i="rotl"></i></button>
+    <button class="ibtn" id="cRotR" title="Auswahl rechts drehen" aria-label="Auswahl rechts drehen" hidden><i data-i="rotr"></i></button>
+    <button class="ibtn" id="zBack" title="In den Hintergrund" aria-label="In den Hintergrund" hidden><i data-i="back"></i></button>
+    <button class="ibtn" id="zFront" title="In den Vordergrund" aria-label="In den Vordergrund" hidden><i data-i="front"></i></button>
     <button class="ibtn" id="dupBtn" title="Duplizieren (Strg+D)" aria-label="Duplizieren"><i data-i="copy"></i></button>
     <button class="ibtn warn" id="delBtn" title="Element löschen (Entf)" aria-label="Element löschen"><i data-i="trash"></i></button>
   </div>
