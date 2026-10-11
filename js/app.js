@@ -55,6 +55,11 @@ const ICONS = {
   close: 'M6 6l12 12M18 6L6 18',
   front: 'M8 8h12v12H8zM4 16V4h12',
   back: 'M4 4h12v12H4zM8 20h12V8',
+  gear: 'M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6zM12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1',
+  comment: 'M4 5h16v11H9l-5 4z',
+  paste: 'M9 4h6v3H9zM7 5H5v16h14V5h-2M9 12h6M9 16h4',
+  dup: 'M9 9h11v11H9zM5 15V4h11M14.5 12v5M12 14.5h5',
+  calc: 'M6 3h12v18H6zM9 7h6M9 11h.01M12 11h.01M15 11h.01M9 14h.01M12 14h.01M15 14h.01M9 17h.01M12 17h.01M15 17h.01',
   eraser: 'M8 20h12M5.5 14.5l9-9a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L12 18H8.5l-3-3a.7.7 0 0 1 0-.5zM9 11l5 5',
   redact: 'M4 6h16v5H4zM4 15h9M4 19h12',
   measure: 'M3 15l12-12 6 6-12 12zM7 11l2 2M10 8l2 2M13 5l2 2',
@@ -65,8 +70,8 @@ const ICONS = {
   pencil: 'M4 20l3-1 12-12-2-2L5 17zM15 5l2-2 2 2-2 2',
 };
 
-const TOOL_NAMES = { select: 'Auswählen', objects: 'Inhalte', text: 'Text', edittext: 'Text ändern', pen: 'Stift', eraser: 'Radierer', hl: 'Markieren', ul: 'Unterstreichen', so: 'Durchstreichen', rect: 'Rechteck', ellipse: 'Ellipse', line: 'Linie', arrow: 'Pfeil', measure: 'Messen', white: 'Abdecken', redact: 'Schwärzen', check: 'Haken', cross: 'Kreuz', img: 'Bild', stamp: 'Stempel', note: 'Notiz', wm: 'Wasserzeichen' };
-const PROPS_OF = { text: ['color', 'font'], pen: ['penkind', 'color', 'stroke', 'opacity'], eraser: ['esize'], hl: ['color', 'opacity'], ul: ['color'], so: ['color'], rect: ['color', 'stroke'], ellipse: ['color', 'stroke'], line: ['color', 'stroke'], arrow: ['color', 'stroke'], measure: ['color', 'scale'], check: ['color', 'stroke'], cross: ['color', 'stroke'], white: [], redact: [], img: [], stamp: ['color', 'stamp'], note: ['color'], wm: ['color', 'opacity'] };
+const TOOL_NAMES = { mark: 'Textmarkierung', select: 'Auswählen', objects: 'Inhalte', text: 'Text', edittext: 'Text ändern', pen: 'Stift', eraser: 'Radierer', hl: 'Markieren', ul: 'Unterstreichen', so: 'Durchstreichen', rect: 'Rechteck', ellipse: 'Ellipse', line: 'Linie', arrow: 'Pfeil', measure: 'Messen', white: 'Abdecken', redact: 'Schwärzen', check: 'Haken', cross: 'Kreuz', img: 'Bild', stamp: 'Stempel', note: 'Notiz', wm: 'Wasserzeichen' };
+const PROPS_OF = { multi: ['color'], mark: ['color', 'opacity'], text: ['color', 'font'], pen: ['penkind', 'color', 'stroke', 'opacity'], eraser: ['esize'], hl: ['color', 'opacity'], ul: ['color'], so: ['color'], rect: ['color', 'stroke'], ellipse: ['color', 'stroke'], line: ['color', 'stroke'], arrow: ['color', 'stroke'], measure: ['color', 'scale'], check: ['color', 'stroke'], cross: ['color', 'stroke'], white: [], redact: [], img: [], stamp: ['color', 'stamp'], note: ['color'], wm: ['color', 'opacity'] };
 const DRAW_TOOLS = new Set(['pen', 'eraser', 'hl', 'ul', 'so', 'rect', 'ellipse', 'line', 'arrow', 'measure', 'white', 'redact', 'check', 'cross', 'objects']);
 const SNAP_TOOLS = new Set(['hl', 'ul', 'so']);
 const KEYS = { v: 'select', m: 'objects', t: 'text', e: 'edittext', p: 'pen', g: 'eraser', h: 'hl', n: 'ul', d: 'so', r: 'rect', o: 'ellipse', l: 'line', a: 'arrow', q: 'measure', w: 'white', b: 'redact', k: 'check', x: 'cross', s: 'stamp', c: 'note' };
@@ -103,7 +108,7 @@ const TP = {
   text: { color: '#1b2130', size: 12, font: 'Helvetica', bold: false, bg: '' },
   pen: { kind: 'fount', color: '#1b2a6b', sw: 2, op: 100, shapes: true },
   eraser: { size: 12 },
-  measure: { color: '#d0342c', sw: 1, scale: 1 },
+  measure: { color: '#d0342c', sw: 1, scale: 1, unit: 'mm' },
   hl: { color: '#ffd400', op: 40 },
   rect: { color: '#d0342c', sw: 2 }, ellipse: { color: '#d0342c', sw: 2 },
   line: { color: '#1b2130', sw: 2 }, arrow: { color: '#d0342c', sw: 2 },
@@ -120,8 +125,11 @@ const S = {
   libDocs: new Map(), analysis: new Map(), derived: new Map(), csel: null, hover: null, cedit: null,
   meta: { title: '', author: '', subject: '', keywords: '' }, touchDrag: false,
   pencil: { seen: false, only: false }, forms: new Map(), formVals: {}, formTouched: new Set(), bookmarks: [], paperSrc: new Map(),
-  sideTab: 'pages', reading: false, night: false,
+  sideTab: 'pages', reading: false, night: false, msel: null, prefs: null,
 };
+/* Einheiten fürs Messen: Faktor von PDF-Punkt (1/72 Zoll) */
+const UNITS = { mm: [25.4 / 72, 'mm', 'Millimeter'], cm: [2.54 / 72, 'cm', 'Zentimeter'], m: [0.0254 / 72, 'm', 'Meter'], in: [1 / 72, 'in', 'Zoll'], ft: [1 / 864, 'ft', 'Fuß'], pt: [1, 'pt', 'Punkt'] };
+const PREF_DEFAULTS = { author: '', unit: 'mm', decimals: 1, scale: 1, exportMarks: 'annots', askComment: false, snap: true, showMarks: true, hlColor: '#ffd400', ulColor: '#1f4fd8', soColor: '#d0342c' };
 const ENG = PL && window.createContentEngine ? window.createContentEngine(PL) : null;
 const els = new Map(), tels = new Map();
 let uidN = 1;
@@ -135,7 +143,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const clone = o => JSON.parse(JSON.stringify(o));
 const pageById = id => S.pages.find(p => p.id === id);
-const hasCE = p => !!(p && p.ce && ((p.ce.del && p.ce.del.length) || (p.ce.rep && Object.keys(p.ce.rep).length) || (p.ce.tf && Object.keys(p.ce.tf).length) || (p.ce.red && p.ce.red.length)));
+const hasCE = p => !!(p && p.ce && ((p.ce.del && p.ce.del.length) || (p.ce.rep && Object.keys(p.ce.rep).length) || (p.ce.tf && Object.keys(p.ce.tf).length) || (p.ce.red && p.ce.red.length) || (p.ce.dup && p.ce.dup.length)));
 function ceKey(p) {
   if (!hasCE(p)) return '';
   const s = JSON.stringify(p.ce); let h = 5381;
@@ -151,6 +159,15 @@ const rotOf = p => ((p.baseRot + p.rot) % 360 + 360) % 360;
 const dims = p => (p.rot % 180 ? [p.h0, p.w0] : [p.w0, p.h0]);
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* nicht verfügbar */ } };
+S.prefs = (() => { try { return { ...PREF_DEFAULTS, ...JSON.parse(lsGet('pdfwb.prefs') || '{}') }; } catch (e) { return { ...PREF_DEFAULTS }; } })();
+const savePrefs = () => lsSet('pdfwb.prefs', JSON.stringify(S.prefs));
+TP.measure.unit = S.prefs.unit; TP.measure.scale = S.prefs.scale;
+TP.hl.color = S.prefs.hlColor; TP.ul.color = S.prefs.ulColor; TP.so.color = S.prefs.soColor;
+/* Länge in PDF-Punkt in der gewählten Einheit, deutsch formatiert */
+function fmtLen(pt, unit, scale = 1, dec = S.prefs.decimals) {
+  const u = UNITS[unit] || UNITS.mm, v = pt * u[0] * scale;
+  return v.toFixed(dec).replace('.', ',') + ' ' + u[1];
+}
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const icon = name => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[name] || ''}"/></svg>`;
 function hex2rgb(h) {
@@ -189,6 +206,10 @@ function bbox(a) {
     }
     case 'text': return { x: a.x, y: a.y, w: textWidth(a), h: a.text.split('\n').length * LH * a.size };
     case 'check': case 'cross': return { x: a.x, y: a.y, w: a.s, h: a.s };
+    case 'mark': {
+      const x = Math.min(...a.rects.map(r => r.x)), y = Math.min(...a.rects.map(r => r.y));
+      return { x, y, w: Math.max(...a.rects.map(r => r.x + r.w)) - x, h: Math.max(...a.rects.map(r => r.y + r.h)) - y };
+    }
     case 'stamp': { const g = stampGeom(a); return { x: a.x, y: a.y, w: g.w, h: g.h }; }
     case 'note': return { x: a.x, y: a.y, w: NOTE, h: NOTE };
     case 'wm': {
@@ -270,10 +291,20 @@ function penOutline(a) {
     ...cap(start, rad[0], angOf(start, R[0])), ['Z']];
 }
 const penKind = a => a.kind || 'ball';
+/* Textmarkierung: je Zeile ein Rechteck; Unter- und Durchstreichen als Linie (bei gedrehter Seite senkrecht) */
+function markSegs(a) {
+  return a.rects.map(r => {
+    const rect = [['M', r.x, r.y], ['L', r.x + r.w, r.y], ['L', r.x + r.w, r.y + r.h], ['L', r.x, r.y + r.h], ['Z']];
+    if (a.kind === 'hl') return ['fill', rect];
+    const v = !!a.vert, size = v ? r.w : r.h, w = Math.max(0.8, size * 0.075);
+    const f = a.kind === 'ul' ? 0.9 : 0.55;
+    if (!v) { const y = r.y + r.h * f; return ['line', { d: [['M', r.x, y], ['L', r.x + r.w, y]], w }]; }
+    const x = r.x + r.w * (1 - f);
+    return ['line', { d: [['M', x, r.y], ['L', x, r.y + r.h]], w }];
+  });
+}
 function measureLabel(a) {
-  const v = Math.hypot(a.x2 - a.x1, a.y2 - a.y1) * 25.4 / 72 * (a.scale || 1);
-  const de = (x, d) => x.toFixed(d).replace('.', ',');
-  return v >= 1000 ? de(v / 1000, 2) + ' m' : v >= 100 ? de(v, 0) + ' mm' : de(v, 1) + ' mm';
+  return fmtLen(Math.hypot(a.x2 - a.x1, a.y2 - a.y1), a.unit || S.prefs.unit, a.scale || 1, a.dec != null ? a.dec : S.prefs.decimals);
 }
 function measureGeom(a) {
   let ang = Math.atan2(a.y2 - a.y1, a.x2 - a.x1) * 180 / Math.PI;
@@ -296,6 +327,9 @@ function annotSVG(a) {
         `<text x="0" y="-4" text-anchor="middle" font-family='${FONTS.Helvetica.css}' font-size="${g.size}" fill="${c}">${esc(g.label)}</text></g></g>`;
     }
     case 'redact': return `<path d="${dOf(segs(a))}" fill="#000000"/>`;
+    case 'mark': return markSegs(a).map(([k, q]) => k === 'fill'
+      ? `<path d="${dOf(q)}" fill="${c}" fill-opacity="${(a.op || 40) / 100}"/>`
+      : `<path d="${dOf(q.d)}" fill="none" stroke="${c}" stroke-width="${r2(q.w)}" stroke-linecap="butt"/>`).join('');
     case 'hl': return `<path d="${dOf(segs(a))}" fill="${c}" fill-opacity="${a.op / 100}"/>`;
     case 'white': return `<path d="${dOf(segs(a))}" fill="#ffffff"/>`;
     case 'rect': case 'ellipse': return `<path d="${dOf(segs(a))}" fill="none" stroke="${c}" stroke-width="${a.sw}"/>`;
@@ -332,6 +366,7 @@ function distSeg(p, a, b) {
   return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
 }
 function hitsAnnot(a, pt, tol) {
+  if (a.t === 'mark') return a.rects.some(r => pt[0] >= r.x - tol && pt[0] <= r.x + r.w + tol && pt[1] >= r.y - tol && pt[1] <= r.y + r.h + tol);
   const b = bbox(a);
   const inBox = pt[0] >= b.x - tol && pt[0] <= b.x + b.w + tol && pt[1] >= b.y - tol && pt[1] <= b.y + b.h + tol;
   if (a.t === 'pen' || a.t === 'line' || a.t === 'arrow' || a.t === 'measure') {
@@ -360,6 +395,7 @@ function translated(o, dx, dy) {
   const a = clone(o);
   if (a.pts) a.pts = a.pts.map(([x, y, p]) => (p == null ? [r2(x + dx), r2(y + dy)] : [r2(x + dx), r2(y + dy), p]));
   else if ('x1' in a) { a.x1 += dx; a.x2 += dx; a.y1 += dy; a.y2 += dy; }
+  else if (a.rects) a.rects = a.rects.map(r => ({ ...r, x: r.x + dx, y: r.y + dy }));
   else { a.x += dx; a.y += dy; }
   return a;
 }
@@ -368,6 +404,7 @@ function scaled(o, ob, fx, fy) {
   const sx = x => ob.x + (x - ob.x) * fx, sy = y => ob.y + (y - ob.y) * fy;
   if (a.pts) { a.pts = a.pts.map(([x, y, p]) => (p == null ? [r2(sx(x)), r2(sy(y))] : [r2(sx(x)), r2(sy(y)), p])); if (a.t === 'pen') a.sw = Math.max(0.25, r2(a.sw * Math.sqrt(fx * fy))); }
   else if ('x1' in a) { a.x1 = sx(a.x1); a.x2 = sx(a.x2); a.y1 = sy(a.y1); a.y2 = sy(a.y2); }
+  else if (a.rects) a.rects = a.rects.map(r => ({ x: sx(r.x), y: sy(r.y), w: r.w * fx, h: r.h * fy }));
   else if (a.t === 'text') a.size = Math.max(4, Math.round(a.size * fx * 2) / 2);
   else if (a.t === 'check' || a.t === 'cross') a.s = Math.max(4, a.s * fx);
   else if (a.t === 'stamp' || a.t === 'wm') a.size = Math.max(4, Math.round(a.size * fx * 2) / 2);
@@ -380,6 +417,11 @@ function rotAnnot(o, W, H, d) {
   const a = clone(o);
   if (a.pts) { a.pts = a.pts.map(p => (p[2] == null ? f(p).map(r2) : [...f(p).map(r2), p[2]])); return a; }
   if ('x1' in a) { [a.x1, a.y1] = f([a.x1, a.y1]); [a.x2, a.y2] = f([a.x2, a.y2]); return a; }
+  if (a.rects) {
+    a.rects = a.rects.map(r => { const p1 = f([r.x, r.y]), p2 = f([r.x + r.w, r.y + r.h]); return { x: Math.min(p1[0], p2[0]), y: Math.min(p1[1], p2[1]), w: Math.abs(p2[0] - p1[0]), h: Math.abs(p2[1] - p1[1]) }; });
+    a.vert = !a.vert;
+    return a;
+  }
   if (['rect', 'hl', 'white', 'ellipse', 'redact'].includes(a.t)) {
     const p1 = f([a.x, a.y]), p2 = f([a.x + a.w, a.y + a.h]);
     a.x = Math.min(p1[0], p2[0]); a.y = Math.min(p1[1], p2[1]); a.w = Math.abs(p2[0] - p1[0]); a.h = Math.abs(p2[1] - p1[1]);
@@ -488,7 +530,7 @@ async function ensureDerived(p) {
     for (const [dk, d] of S.derived) { if (S.derived.size <= 40) break; if (!live.has(dk)) { try { d.pdf.destroy(); } catch (e) { /* egal */ } S.derived.delete(dk); } }
   }
 }
-function newCE(p) { const c = p.ce || {}; return { del: [...(c.del || [])], rep: { ...(c.rep || {}) }, tf: { ...(c.tf || {}) }, red: (c.red || []).map(r => r.slice()) }; }
+function newCE(p) { const c = p.ce || {}; return { del: [...(c.del || [])], rep: { ...(c.rep || {}) }, tf: { ...(c.tf || {}) }, red: (c.red || []).map(r => r.slice()), dup: (c.dup || []).map(d => ({ id: d.id, items: d.items.map(([i, A]) => [i, A.slice()]) })) }; }
 async function applyCE(p) {
   busy(true, 'Seite wird neu aufgebaut …');
   try { await ensureDerived(p); }
@@ -544,6 +586,15 @@ function cItems(p) {
     items.push({ kind: 'text', ids: g.objs.map(o => o.i), firstId: first.i, text: text.trimEnd(), box: db(ENG.xbox(ub, A)), fs: first.fs * scale, font: first.font, fill: first.fill, base: tpt(A, first.base), dir: first.dir, redacted: g.objs.some(o => masked.has(o.i) || (red.length && del.has(o.i) && !(p.ce.del || []).includes(o.i))) });
   }
   for (const o of an.objects) if (o.kind !== 'text' && !del.has(o.i)) items.push({ kind: o.kind, ids: [o.i], box: db(X(o.bbox, o.i)) });
+  // eingefügte Kopien von PDF-Inhalten als eigene Elemente
+  const byI = new Map(an.objects.map(o => [o.i, o]));
+  for (const d of (p.ce && p.ce.dup) || []) {
+    const bs = d.items.map(([i, A]) => byI.get(i) && ENG.xbox(byI.get(i).bbox, A)).filter(Boolean);
+    if (!bs.length) continue;
+    const ub = [Math.min(...bs.map(b => b[0])), Math.min(...bs.map(b => b[1])), Math.max(...bs.map(b => b[2])), Math.max(...bs.map(b => b[3]))];
+    const txt = d.items.map(([i]) => byI.get(i)).filter(o => o && o.kind === 'text').map(o => o.text).join('').replace(/\s+/g, ' ').trim();
+    items.push({ kind: 'copy', ids: [d.id], box: db(ub), text: txt });
+  }
   citemCache.set(k, items);
   return items;
 }
@@ -561,7 +612,7 @@ function itemAt(p, pt, kind) {
   }
   return best ? best.it : null;
 }
-const KIND_NAMES = { text: 'Text', path: 'Fläche', image: 'Bild', form: 'Grafik' };
+const KIND_NAMES = { text: 'Text', path: 'Fläche', image: 'Bild', form: 'Grafik', copy: 'Kopie' };
 function cuiSVG(p) {
   let out = '';
   const box = (b, cls) => `<rect class="${cls}" x="${r2(b.x)}" y="${r2(b.y)}" width="${r2(Math.max(b.w, 1))}" height="${r2(Math.max(b.h, 1))}"/>`;
@@ -596,7 +647,11 @@ async function transformContent(p, items, M, msg) {
   if (!items.length || ENG.isId(M)) return;
   pushHist();
   const ce = newCE(p), ids = new Set(items.flatMap(it => it.ids));
-  for (const i of ids) ce.tf[i] = ENG.mul(ce.tf[i] || [1, 0, 0, 1, 0, 0], M);
+  for (const i of ids) {
+    const d = typeof i === 'string' && ce.dup.find(x => x.id === i);
+    if (d) d.items = d.items.map(([j, A]) => [j, ENG.mul(A, M)]);
+    else ce.tf[i] = ENG.mul(ce.tf[i] || [1, 0, 0, 1, 0, 0], M);
+  }
   p.ce = ce;
   S.hover = null;
   await applyCE(p);
@@ -655,9 +710,9 @@ function showGhost(p, items, dx, dy, k) {
 function hideGhost() { for (const e of els.values()) if (e.ghost) { e.ghost.remove(); e.ghost = null; } }
 
 /* Ausrichtungshilfen: Kanten und Mitten von Seite, Kommentaren und PDF-Inhalten */
-function snapLines(p, skipIds, skipAnnot) {
+function snapLines(p, skipIds, skipAnnot, skipAnnotIds) {
   const [W, H] = dims(p), xs = [0, W / 2, W], ys = [0, H / 2, H];
-  for (const a of p.annots) if (a !== skipAnnot) { const b = bbox(a); xs.push(b.x, b.x + b.w / 2, b.x + b.w); ys.push(b.y, b.y + b.h / 2, b.y + b.h); }
+  for (const a of p.annots) if (a !== skipAnnot && !(skipAnnotIds && skipAnnotIds.has(a.id))) { const b = bbox(a); xs.push(b.x, b.x + b.w / 2, b.x + b.w); ys.push(b.y, b.y + b.h / 2, b.y + b.h); }
   const items = S.analysis.get(p.src + ':' + p.idx) ? cItems(p) || [] : [];
   for (const it of items) {
     if (skipIds && it.ids.some(i => skipIds.has(i))) continue;
@@ -667,7 +722,7 @@ function snapLines(p, skipIds, skipAnnot) {
   return { xs, ys, W, H };
 }
 function snapBox(lines, b, noSnap) {
-  if (noSnap) return { dx: 0, dy: 0, svg: '' };
+  if (noSnap || !S.prefs.snap) return { dx: 0, dy: 0, svg: '' };
   const tol = 5 / S.zoom;
   const pick = (cands, vals) => {
     let best = null;
@@ -693,7 +748,10 @@ function deleteContent() {
   const p = pageById(cs.pid); if (!p) return;
   pushHist();
   const ce = newCE(p);
-  for (const it of cs.items) for (const i of it.ids) { if (!ce.del.includes(i)) ce.del.push(i); delete ce.rep[i]; delete ce.tf[i]; }
+  for (const it of cs.items) for (const i of it.ids) {
+    if (typeof i === 'string') { ce.dup = ce.dup.filter(d => d.id !== i); continue; }
+    if (!ce.del.includes(i)) ce.del.push(i); delete ce.rep[i]; delete ce.tf[i];
+  }
   p.ce = ce;
   const n = cs.items.length;
   S.csel = null; S.hover = null;
@@ -898,7 +956,10 @@ function drawAnnots(p) {
   const e = els.get(p.id); if (!e) return;
   const editId = S.editing ? S.editing.a.id : null;
   const vis = p.annots.filter(a => a.id !== editId);
-  const ann = vis.map(annotSVG).join('');
+  const ann = vis.map(annotSVG).join('') + vis.filter(a => a.comment && a.t !== 'note').map(a => {
+    const b = bbox(a);
+    return `<g class="cmk" transform="translate(${r2(b.x + b.w + 1)} ${r2(b.y - 1)})"><title>${esc(a.comment)}</title><path d="M0 -10h11a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5H5l-3.5 3v-3H0a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 0 -10z"/></g>`;
+  }).join('');
   // Griffflächen als HTML, damit touch-action greift: ein Finger auf einem Element verschiebt es statt zu scrollen
   if (e.hbl) {
     const [W, H] = dims(p), tol = COARSE ? 8 : 2;
@@ -908,7 +969,15 @@ function drawAnnots(p) {
     }).join('');
   }
   const a = selAnnot();
-  const ui = a && S.sel.pid === p.id ? selUI(a) : '';
+  let ui = a && S.sel.pid === p.id ? selUI(a) : '';
+  if (S.msel && S.msel.pid === p.id) {
+    const list = p.annots.filter(x => S.msel.ids.includes(x.id)), pad = 3 / S.zoom;
+    if (list.length) {
+      const u = unionBox(list);
+      ui = list.map(x => { const b = bbox(x); return `<rect class="msel" x="${r2(b.x)}" y="${r2(b.y)}" width="${r2(b.w)}" height="${r2(b.h)}"/>`; }).join('') +
+        `<rect class="selbox" x="${r2(u.x - pad)}" y="${r2(u.y - pad)}" width="${r2(u.w + 2 * pad)}" height="${r2(u.h + 2 * pad)}"/>`;
+    }
+  }
   e.svg.innerHTML = `<g class="ann">${ann}</g><g class="hits">${hitsSVG(p)}</g><g class="cui">${cuiSVG(p)}</g><g class="draft"></g><g class="ui">${ui}</g>`;
   queueThumb(p);
   updateSideLater();
@@ -1114,7 +1183,8 @@ function selAnnot() {
   return (p && p.annots.find(a => a.id === S.sel.aid)) || null;
 }
 function select(pid, aid) {
-  const prev = S.sel ? pageById(S.sel.pid) : null;
+  const prev = S.sel ? pageById(S.sel.pid) : S.msel ? pageById(S.msel.pid) : null;
+  S.msel = null;
   S.sel = pid ? { pid, aid } : null;
   if (prev) drawAnnots(prev);
   if (pid && (!prev || prev.id !== pid)) drawAnnots(pageById(pid));
@@ -1123,7 +1193,7 @@ function select(pid, aid) {
 function setTool(t) {
   commitEdit();
   S.tool = t;
-  if (t !== 'select' && S.sel) select(null);
+  if (t !== 'select' && (S.sel || S.msel)) setMulti(null, []);
   if (t !== 'objects' && (S.csel || S.hover)) { const hp = S.hover && pageById(S.hover.pid); S.hover = null; setCsel(null, []); if (hp) drawCUI(hp); }
   if ((t === 'objects' || t === 'edittext') && S.pages[S.cur]) analysisOf(S.pages[S.cur]).catch(() => toast('Die Inhalte dieser PDF lassen sich nicht auslesen (z. B. verschlüsselt).'));
   if (SNAP_TOOLS.has(t) && S.pages[S.cur]) analysisOf(S.pages[S.cur]).catch(() => {});
@@ -1134,6 +1204,7 @@ function setTool(t) {
 }
 function propTarget() {
   if (S.editing) return { obj: S.editing.a, type: 'text', editing: true };
+  if (S.msel) { const s = selectedAnnots(); if (s && s.list.length) return { obj: s.list.find(a => a.color) || s.list[0], objs: s.list, type: 'multi', isAnnot: true, multi: true }; }
   const a = selAnnot();
   if (a) return { obj: a, type: a.t, isAnnot: true };
   if (TP[S.tool]) return { obj: TP[S.tool], type: S.tool };
@@ -1146,6 +1217,10 @@ function renderProps() {
   $('#cRotL').hidden = $('#cRotR').hidden = !cs;
   const selA = !cs && !S.cedit ? selAnnot() : null;
   $('#zFront').hidden = $('#zBack').hidden = !selA;
+  $('#cmtBtn').hidden = !selA;
+  $('#copyBtn').hidden = !(selA || S.msel || cs);
+  $('#pasteBtn').hidden = !S.clip;
+  $('#cmtBtn').setAttribute('aria-pressed', String(!!(selA && (selA.comment || (selA.t === 'note' && selA.text)))));
   if (cs || S.cedit) {
     $$('[data-for]', propbar).forEach(el => { el.hidden = true; });
     $('#dupBtn').hidden = true; $('#delBtn').hidden = !cs;
@@ -1160,11 +1235,13 @@ function renderProps() {
   const type = tg ? tg.type : S.tool;
   const show = new Set(PROPS_OF[type] || []);
   $$('[data-for]', propbar).forEach(el => { el.hidden = !show.has(el.dataset.for); });
-  const sel = !!selAnnot();
+  const sel = !!selAnnot() || !!S.msel;
   $('#delBtn').hidden = !sel; $('#dupBtn').hidden = !sel;
-  $('#pTarget').textContent = tg && (tg.isAnnot || tg.editing) ? 'Auswahl · ' + (TOOL_NAMES[type] || type) : (TOOL_NAMES[S.tool] || '');
+  $('#pTarget').textContent = tg && tg.multi ? `Auswahl · ${tg.objs.length} Elemente` : tg && (tg.isAnnot || tg.editing) ? 'Auswahl · ' + (TOOL_NAMES[type] || type) + (type === 'mark' ? ' (' + { hl: 'Markieren', ul: 'Unterstreichen', so: 'Durchstreichen' }[tg.obj.kind] + ')' : '') : (TOOL_NAMES[S.tool] || '');
   let hint = '';
-  if (tg && tg.isAnnot && type === 'img') hint = HINTS.img;
+  if (tg && tg.multi) hint = 'Ziehen verschiebt alle · Strg+C kopiert · Entf löscht · Umschalt+Klick ändert die Auswahl';
+  else if (tg && tg.isAnnot && type === 'mark') hint = tg.obj.text ? `„${tg.obj.text.length > 80 ? tg.obj.text.slice(0, 79) + '…' : tg.obj.text}“` + (tg.obj.comment ? ' · ' + tg.obj.comment.slice(0, 60) : '') : '';
+  else if (tg && tg.isAnnot && type === 'img') hint = HINTS.img;
   else if (S.tool === 'text' && !(tg && tg.editing)) hint = 'Auf die Seite klicken, um Text zu schreiben · Strg+Enter oder Esc zum Abschließen';
   else if (!tg || !(tg.isAnnot || tg.editing)) hint = HINTS[S.tool] || '';
   $('#pHint').textContent = hint;
@@ -1177,7 +1254,7 @@ function renderProps() {
     $('#shapeChk').closest('label').hidden = !!tg.isAnnot;
   }
   if (type === 'eraser') { $('#eraseIn').value = o.size; $('#eraseOut').textContent = o.size + ' pt'; }
-  if (type === 'measure') $('#scaleSel').value = String(o.scale || 1);
+  if (type === 'measure') { $('#scaleSel').value = String(o.scale || 1); $('#unitSel').value = o.unit || S.prefs.unit; }
   if (o.color) {
     $$('.sw', $('#swatches')).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.c.toLowerCase() === o.color.toLowerCase())));
     $('#colorPick').value = o.color;
@@ -1192,6 +1269,11 @@ function setProp(k, v, continuous) {
   const tg = propTarget(); if (!tg) return;
   if (tg.editing) {
     tg.obj[k] = v; S.editing.styled = true; TP.text[k] = v; styleTA();
+  } else if (tg.multi) {
+    if (!(continuous && S.propEdit)) pushHist();
+    S.propEdit = !!continuous;
+    tg.objs.forEach(o => { if (k in o) o[k] = v; });
+    drawAnnots(pageById(S.msel.pid)); markDirty();
   } else if (tg.isAnnot) {
     if (!(continuous && S.propEdit)) pushHist();
     S.propEdit = !!continuous;
@@ -1201,18 +1283,143 @@ function setProp(k, v, continuous) {
   } else tg.obj[k] = v;
   renderProps();
 }
-function deleteSel() {
-  const a = selAnnot(); if (!a) return;
-  const p = pageById(S.sel.pid);
-  pushHist(); p.annots = p.annots.filter(x => x !== a); S.sel = null;
-  drawAnnots(p); markDirty(); renderProps();
+/* ---------- Auswahl mehrerer eigener Elemente ---------- */
+function selectedAnnots() {
+  if (S.msel) { const p = pageById(S.msel.pid); return p ? { p, list: p.annots.filter(a => S.msel.ids.includes(a.id)) } : null; }
+  const a = selAnnot(); return a ? { p: pageById(S.sel.pid), list: [a] } : null;
 }
-function pasteAnnot(src, dx) {
-  const p = S.pages[S.cur]; if (!p || !src) return;
-  const a = translated(src, dx, dx); a.id = uid();
-  pushHist(); p.annots.push(a); markDirty();
+function setMulti(pid, ids) {
+  const prevP = (S.msel && pageById(S.msel.pid)) || (S.sel && pageById(S.sel.pid));
+  S.sel = null; S.msel = null;
+  if (ids.length === 1) S.sel = { pid, aid: ids[0] };
+  else if (ids.length > 1) S.msel = { pid, ids };
+  if (prevP) drawAnnots(prevP);
+  if (pid && (!prevP || prevP.id !== pid)) drawAnnots(pageById(pid));
+  renderProps();
+}
+const unionBox = list => { const bs = list.map(bbox), x = Math.min(...bs.map(b => b.x)), y = Math.min(...bs.map(b => b.y)); return { x, y, w: Math.max(...bs.map(b => b.x + b.w)) - x, h: Math.max(...bs.map(b => b.y + b.h)) - y }; };
+function restoreMulti(d) { d.orig.forEach(o => { const a = d.p.annots.find(x => x.id === o.id); if (a) Object.assign(a, clone(o)); }); if (S.hist.length) S.hist.pop(); updateUndo(); drawAnnots(d.p); }
+function deleteSel() {
+  const s = selectedAnnots(); if (!s) return;
+  const ids = new Set(s.list.map(a => a.id));
+  pushHist(); s.p.annots = s.p.annots.filter(x => !ids.has(x.id)); S.sel = null; S.msel = null;
+  drawAnnots(s.p); markDirty(); renderProps();
+  if (ids.size > 1) toast(`${ids.size} Elemente gelöscht`);
+}
+
+/* ---------- Kopieren und Einfügen ---------- */
+async function writeSysClip(text) {
+  if (!text) return false;
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) { return false; }
+}
+function copySelection(cut) {
+  commitEdit();
+  if (S.csel && S.tool === 'objects') { copyContent(); return true; }
+  const s = selectedAnnots(); if (!s) return false;
+  const text = s.list.map(a => (a.t === 'mark' ? a.text : a.text) || a.comment || '').filter(Boolean).join('\n');
+  S.clip = { type: 'annots', pid: s.p.id, items: s.list.map(clone), n: 0, sysText: text, stale: false };
+  writeSysClip(text);
+  if (cut) deleteSel();
+  const n = s.list.length;
+  toast(cut ? (n === 1 ? 'Element ausgeschnitten' : `${n} Elemente ausgeschnitten`) : (n === 1 ? 'Element kopiert' : `${n} Elemente kopiert`) + (text ? ' (Text auch in der Zwischenablage)' : ''));
+  renderProps();
+  return true;
+}
+function pasteClip() {
+  const c = S.clip, p = S.pages[S.cur]; if (!c || !p) return false;
+  commitEdit();
+  if (c.type === 'content') { pasteContent(c, p); return true; }
+  c.n = (c.n || 0) + 1;
+  const same = p.id === c.pid, off = same ? 12 * c.n : 0, [W, H] = dims(p);
+  const items = c.items.map(o => { const a = translated(o, off, off); a.id = uid(); return a; });
+  // auf kleineren Seiten in den sichtbaren Bereich schieben
+  const u = unionBox(items), dx = Math.min(0, W - (u.x + u.w)) - Math.min(0, u.x), dy = Math.min(0, H - (u.y + u.h)) - Math.min(0, u.y);
+  const placed = dx || dy ? items.map(a => ({ ...translated(a, dx, dy), id: a.id })) : items;
+  pushHist(); p.annots.push(...placed); markDirty();
   if (S.tool !== 'select') setTool('select');
-  select(p.id, a.id); drawAnnots(p);
+  setMulti(p.id, placed.map(a => a.id)); drawAnnots(p);
+  toast(placed.length === 1 ? 'Eingefügt' : `${placed.length} Elemente eingefügt`);
+  return true;
+}
+function duplicateSel() {
+  const s = selectedAnnots(); if (!s) return;
+  const items = s.list.map(o => { const a = translated(o, 12, 12); a.id = uid(); return a; });
+  pushHist(); s.p.annots.push(...items); markDirty();
+  setMulti(s.p.id, items.map(a => a.id));
+}
+/* PDF-Inhalte kopieren: auf derselben Seite als echte Vektor-Kopie, auf anderen Seiten als Bild */
+async function copyContent() {
+  const cs = S.csel; if (!cs) return;
+  const p = pageById(cs.pid), u = cselBox(cs.items);
+  const text = cs.items.filter(i => i.text).map(i => i.text).join('\n');
+  const ids = cs.items.flatMap(i => i.ids);
+  S.clip = { type: 'content', pid: p.id, ids, box: u, n: 0, sysText: text, stale: false, png: null };
+  const clip = S.clip;
+  writeSysClip(text);
+  toast(`${cs.items.length === 1 ? 'Element' : cs.items.length + ' Elemente'} kopiert` + (text ? ' (Text auch in der Zwischenablage)' : ''));
+  renderProps();
+  try { clip.png = await renderObjects(p, ids, u, 3); } catch (e) { console.warn('Bild der Auswahl nicht erstellt', e); }
+}
+async function renderObjects(p, ids, box, scale) {
+  const an = await analysisOf(p), keep = new Set(ids);
+  const ce = newCE(p);
+  ce.del = [...new Set([...ce.del, ...an.objects.filter(o => !keep.has(o.i)).map(o => o.i)])];
+  ce.dup = ce.dup.filter(d => keep.has(d.id));
+  const ld = await libDocOf(p.src), out = await PL.PDFDocument.create(), [pg] = await out.copyPages(ld, [p.idx]);
+  out.addPage(pg); ENG.editPage(out, pg, an, ce); pg.node.delete(PL.PDFName.of('Annots'));
+  const pdf = await PDFJS.getDocument({ data: await out.save(), isEvalSupported: false }).promise;
+  try {
+    const page = await pdf.getPage(1), vp = page.getViewport({ scale, rotation: rotOf(p), offsetX: -box.x * scale, offsetY: -box.y * scale });
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(box.w * scale)); c.height = Math.max(1, Math.ceil(box.h * scale));
+    await page.render({ canvasContext: c.getContext('2d'), viewport: vp, background: 'rgba(0,0,0,0)' }).promise;
+    return { url: c.toDataURL('image/png'), w: c.width, h: c.height };
+  } finally { pdf.destroy(); }
+}
+async function pasteContent(c, p) {
+  c.n = (c.n || 0) + 1;
+  if (p.id === c.pid) {
+    const src = pageById(c.pid), T = moveMatrix(p, 12 * c.n, 12 * c.n, [c.box.x, c.box.y]);
+    const ce = newCE(p), items = [];
+    for (const i of c.ids) {
+      const d = typeof i === 'string' && ce.dup.find(x => x.id === i);
+      if (d) d.items.forEach(([j, A]) => items.push([j, ENG.mul(A, T)]));
+      else if (typeof i === 'number') items.push([i, ENG.mul((src.ce && src.ce.tf && src.ce.tf[i]) || [1, 0, 0, 1, 0, 0], T)]);
+    }
+    if (!items.length) return;
+    const id = uid('d');
+    pushHist(); ce.dup.push({ id, items }); p.ce = ce;
+    await applyCE(p);
+    if (S.tool !== 'objects') setTool('objects');
+    const fresh = cItems(p) || [];
+    setCsel(p.id, fresh.filter(it => it.ids.includes(id)));
+    toast('Kopie eingefügt · ziehen zum Verschieben');
+    return;
+  }
+  if (!c.png) { toast('Die Kopie wird noch vorbereitet. Bitte gleich noch einmal einfügen.'); c.n--; return; }
+  const id = registerImage(c.png.url, 'png', c.png.w, c.png.h), [W, H] = dims(p);
+  const a = { id: uid(), t: 'img', img: id, x: clamp(c.box.x, 0, Math.max(0, W - c.box.w)), y: clamp(c.box.y, 0, Math.max(0, H - c.box.h)), w: c.box.w, h: c.box.h };
+  pushHist(); p.annots.push(a); markDirty(); setTool('select'); setMulti(p.id, [a.id]);
+  toast('Als Bild eingefügt (PDF-Inhalte lassen sich nur auf derselben Seite als Vektor kopieren)');
+}
+/* Zeichen, die die PDF-Standardschriften nicht kennen, lesbar ersetzen (für Rechenergebnisse) */
+function winAnsiSafe(t) {
+  const SUPD = '⁰¹²³⁴⁵⁶⁷⁸⁹', SUBD = '₀₁₂₃₄₅₆₇₈₉';
+  return t.replace(/−/g, '-').replace(/√/g, 'sqrt').replace(/∛/g, 'cbrt').replace(/π/g, 'pi').replace(/≈/g, '~').replace(/≠/g, '!=').replace(/∞/g, 'unendlich')
+    .replace(/[⁰⁴-⁹⁻]+/g, m => '^' + m.split('').map(c => (c === '⁻' ? '-' : SUPD.indexOf(c))).join(''))
+    .replace(/[₀-₉]/g, c => SUBD.indexOf(c));
+}
+/* Text oder Bilder aus anderen Programmen einfügen */
+function viewCenter(p) {
+  const e = els.get(p.id), r = e.wrap.getBoundingClientRect(), v = viewer.getBoundingClientRect(), [W, H] = dims(p);
+  const top = Math.max(r.top, v.top), bot = Math.min(r.bottom, v.bottom), left = Math.max(r.left, v.left), right = Math.min(r.right, v.right);
+  return [bot > top && right > left ? ((left + right) / 2 - r.left) / S.zoom : W / 2, bot > top ? ((top + bot) / 2 - r.top) / S.zoom : H / 2];
+}
+function insertTextAnnot(text, p = S.pages[S.cur]) {
+  if (!p || !text) return;
+  const tp = TP.text, [cx, cy] = viewCenter(p), [W] = dims(p);
+  const a = { id: uid(), t: 'text', x: 0, y: 0, text: text.replace(/\r/g, '').slice(0, 5000), color: tp.color, size: tp.size, font: tp.font, bold: tp.bold, bg: tp.bg || '' };
+  const b = bbox(a); a.x = clamp(cx - b.w / 2, 4, Math.max(4, W - b.w - 4)); a.y = cy - b.h / 2;
+  pushHist(); p.annots.push(a); markDirty(); setTool('select'); setMulti(p.id, [a.id]);
 }
 
 /* ---------- Zeiger ---------- */
@@ -1249,6 +1456,7 @@ pagesEl.addEventListener('pointerdown', e => {
   if ((e.button !== 0 && !stylusErase) || e.target.closest('textarea') || e.target.closest('.forml .ff')) return;
   if (e.pointerType === 'pen') notePencil();
   if (drag && drag.pointerId !== e.pointerId) return;
+  if (drag) endDrag();
   if ((e.pointerType === 'touch' && !e.isPrimary) || S.pinch) return;
   // Handballen-Erkennung: Finger zeichnen nicht, wenn nur der Pencil zeichnen soll
   if (S.pencil.only && e.pointerType === 'touch' && PENCIL_TOOLS.has(S.tool)) return;
@@ -1290,13 +1498,30 @@ pagesEl.addEventListener('pointerdown', e => {
         drag = { mode: 'resize', p, pointerId: e.pointerId, a, orig: clone(a), ob: b, start: pt, moved: false }; S.touchDrag = e.pointerType === 'touch'; e.preventDefault(); return;
       }
     }
+    // Mehrfachauswahl: in die Auswahl tippen und ziehen verschiebt alle
+    if (S.msel && S.msel.pid === p.id && !e.shiftKey) {
+      const list = p.annots.filter(x => S.msel.ids.includes(x.id)), u = unionBox(list), tol = 4 / S.zoom;
+      if (pt[0] >= u.x - tol && pt[0] <= u.x + u.w + tol && pt[1] >= u.y - tol && pt[1] <= u.y + u.h + tol) {
+        drag = { mode: 'mmove', p, pointerId: e.pointerId, list, orig: list.map(clone), start: pt, moved: false, lines: snapLines(p, null, null, new Set(S.msel.ids)) };
+        S.touchDrag = e.pointerType === 'touch'; e.preventDefault(); return;
+      }
+    }
     const hit = hitTest(p, pt);
+    if (hit && (e.shiftKey || e.metaKey || e.ctrlKey)) {
+      const cur = S.msel && S.msel.pid === p.id ? S.msel.ids.slice() : S.sel && S.sel.pid === p.id ? [S.sel.aid] : [];
+      const k = cur.indexOf(hit.id); if (k >= 0) cur.splice(k, 1); else cur.push(hit.id);
+      setMulti(p.id, cur); e.preventDefault(); return;
+    }
     if (hit) {
       const was = S.sel && S.sel.aid === hit.id;
+      if (S.msel) S.msel = null;
       select(p.id, hit.id); drag = { mode: 'move', p, pointerId: e.pointerId, a: hit, orig: clone(hit), start: pt, moved: false, tapNote: hit.t === 'note' && was, lines: snapLines(p, null, hit) };
       S.touchDrag = e.pointerType === 'touch'; e.preventDefault();
-    }
-    else select(null);
+    } else if (e.pointerType !== 'touch') {
+      // Rahmen aufziehen wählt mehrere Elemente
+      e.preventDefault();
+      drag = { mode: 'amarq', p, pointerId: e.pointerId, start: pt, moved: false, r: null, add: e.shiftKey };
+    } else setMulti(null, []);
     return;
   }
   if (t === 'note') {
@@ -1333,11 +1558,16 @@ pagesEl.addEventListener('pointerdown', e => {
     pushHist(); p.annots.push({ id: uid(), t, x: pt[0] - s / 2, y: pt[1] - s / 2, s, color: tp.color, sw: tp.sw });
     drawAnnots(p); markDirty(); return;
   }
+  // Markieren, Unterstreichen, Durchstreichen: auf Text beginnen = Text auswählen wie in Acrobat
+  if (SNAP_TOOLS.has(t)) {
+    const ch = charsOf(p), i = ch ? charAt(ch, pt, 3 / S.zoom) : -1;
+    if (i >= 0) { drag = { mode: 'tsel', p, pointerId: e.pointerId, tool: t, ch, i0: i, i1: i, start: pt, moved: false }; return; }
+  }
   const tp = TP[t] || {};
   let a;
   if (t === 'pen') a = { id: uid(), t, kind: tp.kind, pts: [[r2(pt[0]), r2(pt[1]), r2(pressureOf(e))]], color: tp.color, sw: tp.sw, op: tp.op };
   else if (t === 'line' || t === 'arrow') a = { id: uid(), t, x1: pt[0], y1: pt[1], x2: pt[0], y2: pt[1], color: tp.color, sw: tp.sw };
-  else if (t === 'measure') a = { id: uid(), t, x1: pt[0], y1: pt[1], x2: pt[0], y2: pt[1], color: tp.color, sw: tp.sw, scale: tp.scale };
+  else if (t === 'measure') a = { id: uid(), t, x1: pt[0], y1: pt[1], x2: pt[0], y2: pt[1], color: tp.color, sw: tp.sw, scale: tp.scale, unit: tp.unit };
   else if (t === 'ul' || t === 'so') a = { id: uid(), t: 'line', x1: pt[0], y1: pt[1], x2: pt[0], y2: pt[1], color: tp.color, sw: 1.5 };
   else if (t === 'hl') a = { id: uid(), t, x: pt[0], y: pt[1], w: 0, h: 0, color: tp.color, op: tp.op };
   else if (t === 'white' || t === 'redact') a = { id: uid(), t, x: pt[0], y: pt[1], w: 0, h: 0 };
@@ -1405,12 +1635,14 @@ function tryShape(d) {
 }
 window.addEventListener('pointermove', e => {
   if (drag && drag.pointerId != null && e.pointerId !== drag.pointerId) return;
+  // verlorenes pointerup (Stift oder Maus schon abgehoben): Ziehen sauber beenden
+  if (drag && (e.pointerType === 'pen' || e.pointerType === 'mouse') && e.buttons === 0) { S.touchDrag = false; endDrag(); return; }
   if (!drag) {
     const w = e.target && e.target.closest ? e.target.closest('.page') : null;
     let hov = null;
     if (w) {
       const p = pageById(w.dataset.id), pt = ptIn(e, els.get(w.dataset.id));
-      $('#stCursor').textContent = `x ${Math.round(pt[0] * 25.4 / 72)} · y ${Math.round(pt[1] * 25.4 / 72)} mm`;
+      $('#stCursor').textContent = `x ${fmtLen(pt[0], S.prefs.unit, 1, 0)} · y ${fmtLen(pt[1], S.prefs.unit, 1, 0)}`;
       if (p && !S.cedit && (S.tool === 'objects' || S.tool === 'edittext')) { const it = itemAt(p, pt, S.tool === 'edittext' ? 'text' : null); if (it) hov = { pid: p.id, it }; }
       // Pencil-Hover (iPad mit Hover-Unterstützung): Vorschau der Spitze
       if (e.pointerType === 'pen' && !e.buttons && p) {
@@ -1431,6 +1663,32 @@ window.addEventListener('pointermove', e => {
   if (drag.mode === 'erase') {
     const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
     for (const ce of evs.length ? evs : [e]) eraseAt(drag, ptIn(ce, el));
+    return;
+  }
+  if (drag.mode === 'amarq') {
+    const x = Math.min(pt[0], drag.start[0]), y = Math.min(pt[1], drag.start[1]), w = Math.abs(pt[0] - drag.start[0]), h = Math.abs(pt[1] - drag.start[1]);
+    if (!drag.moved && Math.hypot(w, h) * S.zoom < 4) return;
+    drag.moved = true; drag.r = { x, y, w, h };
+    $('.draft', el.svg).innerHTML = `<rect class="marq" x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}"/>`;
+    return;
+  }
+  if (drag.mode === 'mmove') {
+    let dx = pt[0] - drag.start[0], dy = pt[1] - drag.start[1];
+    if (!drag.moved) { if (Math.hypot(dx, dy) * S.zoom < 2) return; pushHist(); drag.moved = true; }
+    const u = unionBox(drag.orig), sn = snapBox(drag.lines, { x: u.x + dx, y: u.y + dy, w: u.w, h: u.h }, e.altKey);
+    dx += sn.dx; dy += sn.dy;
+    drag.orig.forEach((o, k) => Object.assign(drag.list[k], translated(o, dx, dy)));
+    drawAnnots(drag.p);
+    if (sn.svg) $('.draft', el.svg).innerHTML = sn.svg;
+    return;
+  }
+  if (drag.mode === 'tsel') {
+    if (!drag.moved && Math.hypot(pt[0] - drag.start[0], pt[1] - drag.start[1]) * S.zoom < 4) return;
+    drag.moved = true;
+    const j = nearestChar(drag.ch, pt); if (j >= 0) drag.i1 = j;
+    const m = markFromChars(drag.ch, drag.i0, drag.i1), tp = TP[drag.tool];
+    $('.draft', el.svg).innerHTML = m ? annotSVG({ t: 'mark', kind: drag.tool, rects: m.rects, color: tp.color, op: tp.op || 40, vert: rotOf(drag.p) % 180 !== 0 }) : '';
+    if (m) $('#stMsg').textContent = `„${m.text.length > 70 ? m.text.slice(0, 69) + '…' : m.text}“`;
     return;
   }
   if (drag.mode === 'cmove') {
@@ -1520,6 +1778,24 @@ function endDrag() {
   if (!drag) return;
   const d = drag; drag = null;
   clearTimeout(d.hold);
+  if (d.mode === 'amarq') {
+    drawDraft(d.p, null);
+    if (!d.moved) { setMulti(null, []); return; }
+    const r = d.r, cur = d.add && S.msel && S.msel.pid === d.p.id ? S.msel.ids.slice() : d.add && S.sel && S.sel.pid === d.p.id ? [S.sel.aid] : [];
+    for (const a of d.p.annots) {
+      const b = bbox(a), ix = Math.max(0, Math.min(b.x + b.w, r.x + r.w) - Math.max(b.x, r.x)), iy = Math.max(0, Math.min(b.y + b.h, r.y + r.h) - Math.max(b.y, r.y));
+      if (ix * iy >= 0.5 * Math.max(b.w, 1) * Math.max(b.h, 1) && !cur.includes(a.id)) cur.push(a.id);
+    }
+    setMulti(d.p.id, cur);
+    if (!cur.length) toast('Im Rahmen liegt kein eigenes Element.');
+    return;
+  }
+  if (d.mode === 'mmove') { drawDraft(d.p, null); if (d.moved) markDirty(); return; }
+  if (d.mode === 'tsel') {
+    drawDraft(d.p, null);
+    if (d.moved) createMark(d.p, d.ch, d.i0, d.i1, d.tool); else snapToText(d.p, d.start, d.tool);
+    return;
+  }
   if (d.mode === 'erase') {
     drawDraft(d.p, null);
     if (d.removed) setMsg(d.removed === 1 ? '1 Element gelöscht' : `${d.removed} Elemente gelöscht`);
@@ -1583,7 +1859,7 @@ function cancelDrag(e) {
   if (d.mode === 'erase') { drawDraft(d.p, null); return; }
   // ein Pencil-Strich, den Safari abbricht, bleibt erhalten
   if (d.mode === 'draw' && d.ptype === 'pen' && d.a.t === 'pen' && d.a.pts.length > 2) { drag = d; endDrag(); return; }
-  if (d.mode === 'draw' || d.mode === 'marquee' || d.mode === 'cmove' || d.mode === 'cresize') { drawDraft(d.p, null); hideGhost(); }
+  if (['draw', 'marquee', 'cmove', 'cresize', 'tsel', 'amarq', 'mmove'].includes(d.mode)) { drawDraft(d.p, null); hideGhost(); if (d.mode === 'mmove' && d.moved) restoreMulti(d); }
   else if (d.moved) { Object.assign(d.a, d.orig); if (S.hist.length) S.hist.pop(); updateUndo(); drawAnnots(d.p); }
 }
 window.addEventListener('pointerup', e => {
@@ -1607,17 +1883,122 @@ async function applyRedaction(p, a) {
 
 /* Markieren, Unterstreichen und Durchstreichen rasten auf Textzeilen ein */
 function snapToText(p, pt, tool) {
-  const it = cItems(p) && itemAt(p, pt, 'text');
-  if (!it) { toast(tool === 'hl' ? 'Auf eine Textzeile tippen oder einen Bereich aufziehen.' : 'Auf eine Textzeile tippen oder eine Linie ziehen.'); return; }
-  const b = it.box, tp = TP[tool];
-  let a;
-  if (tool === 'hl') a = { id: uid(), t: 'hl', x: b.x - 1, y: b.y, w: b.w + 2, h: b.h, color: tp.color, op: tp.op };
-  else {
-    const y = tool === 'ul' ? b.y + b.h * 0.84 : b.y + b.h * 0.52;
-    a = { id: uid(), t: 'line', x1: b.x, y1: y, x2: b.x + b.w, y2: y, color: tp.color, sw: Math.max(0.75, Math.round(it.fs * 0.07 * 4) / 4) };
-  }
-  pushHist(); p.annots.push(a); markDirty(); drawAnnots(p);
+  const ch = charsOf(p), i = ch ? charAt(ch, pt, 8 / S.zoom) : -1;
+  if (i < 0) { toast(tool === 'hl' ? 'Auf Text tippen und ziehen oder einen Bereich aufziehen.' : 'Auf Text tippen und ziehen oder eine Linie ziehen.'); return; }
+  const line = ch.flat[i].line, idx = ch.flat.map((c, k) => (c.line === line ? k : -1)).filter(k => k >= 0);
+  createMark(p, ch, idx[0], idx[idx.length - 1], tool);
 }
+
+/* ---------- Zeichenindex für Textmarkierungen ----------
+   Jedes Zeichen der Seite mit Box (Ansichtskoordinaten) in Reihenfolge des Inhaltsstroms,
+   berücksichtigt verschobene, gelöschte und geschwärzte Inhalte. */
+const charCache = new Map();
+function charsOf(p) {
+  const an = S.analysis.get(p.src + ':' + p.idx);
+  if (!an) { analysisOf(p).catch(() => {}); return null; }
+  if (an === 'error') return null;
+  const key = p.id + '|' + ceKey(p) + '|' + rotOf(p);
+  if (charCache.has(key)) return charCache.get(key);
+  const proxy = proxyOf(p); if (!proxy) return null;
+  const vp = proxy.getViewport({ scale: 1, rotation: rotOf(p) });
+  const ce = p.ce || {}, del = new Set(ce.del || []), tf = ce.tf || {}, red = ce.red || [], rep = ce.rep || {};
+  const box = (M, x0, x1, y0, y1) => {
+    const q = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].map(([x, y]) => vp.convertToViewportPoint(M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]));
+    const xs = q.map(v => v[0]), ys = q.map(v => v[1]), x = Math.min(...xs), y = Math.min(...ys);
+    return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+  };
+  const flat = [];
+  let line = 0;
+  for (const g of an.groups) {
+    const start = flat.length;
+    for (const o of g.objs) {
+      if (del.has(o.i) || rep[o.i] !== undefined || !o.M) continue;
+      const A = tf[o.i], M = A ? ENG.mul(o.M, A) : o.M;
+      const info = red.length ? ENG.redactInfo(o, A, red) : null;
+      if (info === 'all') continue;
+      const txt = Array.from(o.text), [y0, y1] = o.gy;
+      if (txt.length === o.glyphs.length) o.glyphs.forEach(([gx, adv], k) => { if (!(info && info[k])) flat.push({ ch: txt[k], line, ...box(M, gx, gx + adv, y0, y1) }); });
+      else if (txt.length && !info) flat.push({ ch: o.text, line, ...box(M, 0, o.adv, y0, y1) });
+    }
+    if (flat.slice(start).some(c => c.ch.trim())) line++;
+    else flat.length = start;
+  }
+  const res = { flat };
+  charCache.set(key, res);
+  if (charCache.size > 80) charCache.delete(charCache.keys().next().value);
+  return res;
+}
+function charAt(ch, pt, tol) {
+  let best = -1, bd = Infinity;
+  ch.flat.forEach((c, k) => {
+    const dx = Math.max(c.x - pt[0], 0, pt[0] - c.x - c.w), dy = Math.max(c.y - pt[1], 0, pt[1] - c.y - c.h), d = Math.hypot(dx, dy);
+    if (d <= tol && d < bd) { bd = d; best = k; }
+  });
+  return best;
+}
+function nearestChar(ch, pt) {
+  let best = -1, bd = Infinity;
+  ch.flat.forEach((c, k) => {
+    const dx = Math.max(c.x - pt[0], 0, pt[0] - c.x - c.w), dy = Math.max(c.y - pt[1], 0, pt[1] - c.y - c.h), d = dx + dy * 3;
+    if (d < bd) { bd = d; best = k; }
+  });
+  return best;
+}
+/* Zeichen i0..i1 → je Zeile ein Rechteck plus der markierte Text */
+function markFromChars(ch, i0, i1) {
+  const [a, b] = i0 <= i1 ? [i0, i1] : [i1, i0];
+  const sel = ch.flat.slice(a, b + 1);
+  while (sel.length && !sel[0].ch.trim()) sel.shift();
+  while (sel.length && !sel[sel.length - 1].ch.trim()) sel.pop();
+  if (!sel.length) return null;
+  const rects = [], parts = [];
+  let cur = null, txt = '', prev = null;
+  for (const c of sel) {
+    if (!cur || c.line !== cur.line) {
+      if (cur) { rects.push(cur.r); parts.push(txt.trim()); }
+      cur = { line: c.line, r: { x: c.x, y: c.y, w: c.w, h: c.h } }; txt = ''; prev = null;
+    } else {
+      const r = cur.r, x1 = Math.max(r.x + r.w, c.x + c.w), y1 = Math.max(r.y + r.h, c.y + c.h);
+      r.x = Math.min(r.x, c.x); r.y = Math.min(r.y, c.y); r.w = x1 - r.x; r.h = y1 - r.y;
+    }
+    if (prev && !/\s$/.test(txt) && c.ch.trim() && c.x - (prev.x + prev.w) > Math.min(c.h, prev.h) * 0.22) txt += ' ';
+    txt += c.ch; prev = c;
+  }
+  rects.push(cur.r); parts.push(txt.trim());
+  return { rects: rects.map(r => ({ x: r2(r.x), y: r2(r.y), w: r2(r.w), h: r2(r.h) })), text: parts.join(' ').replace(/-\s(?=[a-zäöüß])/g, '').replace(/\s+/g, ' ').trim() };
+}
+function createMark(p, ch, i0, i1, tool) {
+  const m = markFromChars(ch, i0, i1); if (!m) return null;
+  const tp = TP[tool], a = { id: uid(), t: 'mark', kind: tool, rects: m.rects, text: m.text, color: tp.color };
+  if (tool === 'hl') a.op = tp.op;
+  if (rotOf(p) % 180) a.vert = true;
+  pushHist(); p.annots.push(a); markDirty(); drawAnnots(p);
+  setMsg(`Markiert: „${m.text.length > 60 ? m.text.slice(0, 59) + '…' : m.text}“`);
+  if (S.prefs.askComment) editComment(p, a);
+  return a;
+}
+
+/* Kommentar zu einem beliebigen Element */
+function editComment(p, a) {
+  commitEdit();
+  const m = $('#noteModal'), ta = $('#noteText');
+  $('#noteTitle').textContent = 'Kommentar';
+  $('#noteInfo').textContent = a.t === 'mark' && a.text ? `Zu „${a.text.length > 90 ? a.text.slice(0, 89) + '…' : a.text}“` : `Zu: ${TOOL_NAMES[a.t] || 'Element'}`;
+  ta.value = a.comment || '';
+  $('#noteDelete').hidden = !a.comment;
+  m.hidden = false;
+  setTimeout(() => ta.focus(), 30);
+  const close = () => { m.hidden = true; $('#noteTitle').textContent = 'Notiz'; $('#noteInfo').textContent = NOTE_INFO; $('#noteOk').onclick = $('#noteCancel').onclick = $('#noteDelete').onclick = null; };
+  $('#noteCancel').onclick = close;
+  $('#noteDelete').onclick = () => { close(); pushHist(); delete a.comment; drawAnnots(p); markDirty(); renderProps(); };
+  $('#noteOk').onclick = () => {
+    const txt = ta.value.trim(); close();
+    if (txt === (a.comment || '')) return;
+    pushHist(); if (txt) a.comment = txt; else delete a.comment;
+    drawAnnots(p); markDirty(); renderProps();
+  };
+}
+const NOTE_INFO = 'Wird als Kommentar in der PDF gespeichert und in Acrobat, Vorschau und Browsern angezeigt.';
 
 /* Notizen */
 function editNote(p, a, isNew) {
@@ -2086,14 +2467,80 @@ function pageNumberDialog() {
     markDirty(); toast('Seitenzahlen eingefügt');
   });
 }
-function metaDialog() {
-  const m = S.meta, f = (id, label, v) => `<label class="fld"><span>${label}</span><input class="field" id="${id}" value="${esc(v || '')}"></label>`;
-  dialog('Dokumenteigenschaften', f('mTitle', 'Titel', m.title) + f('mAuthor', 'Autor', m.author) + f('mSubject', 'Betreff', m.subject) + f('mKeys', 'Stichwörter (mit Komma getrennt)', m.keywords) +
-    '<p class="note">Werden beim Speichern in die PDF geschrieben. Der Autor erscheint auch bei Notizen.</p>', 'Übernehmen', b => {
-    S.meta = { title: $('#mTitle', b).value.trim(), author: $('#mAuthor', b).value.trim(), subject: $('#mSubject', b).value.trim(), keywords: $('#mKeys', b).value.trim() };
-    markDirty(); toast('Eigenschaften übernommen');
+/* ---------- Dokumenteinstellungen (Reiter: Dokument, Kommentare, Messen, Ansicht) ---------- */
+function settingsDialog(tab = 'doc') {
+  const m = S.meta, P = S.prefs;
+  const f = (id, label, v, ph = '') => `<label class="fld"><span>${label}</span><input class="field" id="${id}" value="${esc(v || '')}" placeholder="${esc(ph)}"></label>`;
+  const chk = (id, label, on, note = '') => `<label class="chk big"><input type="checkbox" id="${id}"${on ? ' checked' : ''}><span>${label}${note ? `<small>${note}</small>` : ''}</span></label>`;
+  const opt = (v, l, cur) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${l}</option>`;
+  const tabs = [['doc', 'Dokument'], ['cmt', 'Kommentare'], ['meas', 'Messen'], ['view', 'Ansicht']];
+  const nMarks = S.pages.reduce((s, p) => s + p.annots.filter(a => !a.pn).length, 0);
+  dialog('Dokumenteinstellungen', `
+    <div class="seg stab" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" data-st="${k}" aria-pressed="${k === tab}">${l}</button>`).join('')}</div>
+    <div class="spage" data-sp="doc">
+      ${f('mTitle', 'Titel', m.title)}${f('mAuthor', 'Autor des Dokuments', m.author)}
+      <div class="frow">${f('mSubject', 'Betreff', m.subject)}${f('mKeys', 'Stichwörter (mit Komma getrennt)', m.keywords)}</div>
+      <label class="fld"><span>Beim Öffnen in anderen Programmen anzeigen</span><select class="field" id="mMode">${opt('', 'Nur die Seiten', m.pageMode || '')}${opt('UseOutlines', 'Seiten und Lesezeichen', m.pageMode || '')}${opt('UseThumbs', 'Seiten und Miniaturen', m.pageMode || '')}</select></label>
+      <p class="note">${S.pages.length} Seiten · ${nMarks} Kommentare und Markierungen · ${S.bookmarks.length} Lesezeichen</p>
+    </div>
+    <div class="spage" data-sp="cmt" hidden>
+      ${f('pAuthor', 'Dein Name für Kommentare', P.author, 'z. B. ' + (m.author || 'Max Mustermann'))}
+      <div class="fld"><span>Markierungen und Kommentare beim Speichern</span>
+        <label class="chk big"><input type="radio" name="pExp" value="annots"${P.exportMarks === 'annots' ? ' checked' : ''}><span>Als bearbeitbare PDF-Kommentare<small>Markieren, Unterstreichen, Durchstreichen, Stift, Formen, Textfelder und Stempel bleiben in Acrobat, Vorschau und im Browser als Kommentare mit Autor und Text erhalten.</small></span></label>
+        <label class="chk big"><input type="radio" name="pExp" value="flatten"${P.exportMarks === 'flatten' ? ' checked' : ''}><span>Fest in die Seite einbetten<small>Sieht überall gleich aus, lässt sich aber nicht mehr als Kommentar bearbeiten.</small></span></label>
+      </div>
+      ${chk('pAsk', 'Nach dem Markieren nach einem Kommentar fragen', P.askComment)}
+      ${chk('pShow', 'Markierungen und Kommentare anzeigen', P.showMarks, 'Ausschalten zeigt die Seiten ohne eigene Elemente. Gespeichert wird trotzdem alles.')}
+      <div class="frow">
+        <label class="fld"><span>Farbe Markieren</span><input type="color" id="pHl" value="${P.hlColor}"></label>
+        <label class="fld"><span>Farbe Unterstreichen</span><input type="color" id="pUl" value="${P.ulColor}"></label>
+        <label class="fld"><span>Farbe Durchstreichen</span><input type="color" id="pSo" value="${P.soColor}"></label>
+      </div>
+    </div>
+    <div class="spage" data-sp="meas" hidden>
+      <div class="frow">
+        <label class="fld"><span>Einheit</span><select class="field" id="pUnit">${Object.entries(UNITS).map(([k, u]) => opt(k, `${u[2]} (${u[1]})`, P.unit)).join('')}</select></label>
+        <label class="fld"><span>Nachkommastellen</span><select class="field" id="pDec">${[0, 1, 2, 3, 4].map(d => opt(d, d, P.decimals)).join('')}</select></label>
+        <label class="fld"><span>Maßstab</span><select class="field" id="pScale">${SCALES.map(s => opt(s, '1 : ' + s, P.scale)).join('')}</select></label>
+      </div>
+      ${chk('pAll', 'Vorhandene Messungen ebenfalls umstellen', true)}
+      <p class="note">Beispiel: 100 pt entsprechen <b id="pEx">${fmtLen(100, P.unit, P.scale, P.decimals)}</b>.</p>
+    </div>
+    <div class="spage" data-sp="view" hidden>
+      ${chk('pSnap', 'Hilfslinien beim Verschieben', P.snap, 'Elemente rasten an Seitenrand, Mitte und anderen Elementen ein.')}
+      ${chk('pShape', 'Formen beim Zeichnen erkennen', TP.pen.shapes, 'Strich am Ende kurz halten: Linie, Rechteck oder Ellipse.')}
+      ${chk('pNight', 'Nachtmodus für Seiten', S.night)}
+      ${COARSE ? chk('pPencil', 'Nur Apple Pencil zeichnet', S.pencil.only, 'Finger scrollen und zoomen, der Handballen malt nicht mit.') : ''}
+    </div>`, 'Übernehmen', b => {
+    S.meta = { title: $('#mTitle', b).value.trim(), author: $('#mAuthor', b).value.trim(), subject: $('#mSubject', b).value.trim(), keywords: $('#mKeys', b).value.trim(), pageMode: $('#mMode', b).value };
+    const unit = $('#pUnit', b).value, dec = +$('#pDec', b).value, scale = +$('#pScale', b).value;
+    Object.assign(S.prefs, {
+      author: $('#pAuthor', b).value.trim(), exportMarks: $('input[name=pExp]:checked', b).value, askComment: $('#pAsk', b).checked,
+      showMarks: $('#pShow', b).checked, hlColor: $('#pHl', b).value, ulColor: $('#pUl', b).value, soColor: $('#pSo', b).value,
+      unit, decimals: dec, scale, snap: $('#pSnap', b).checked,
+    });
+    savePrefs();
+    TP.hl.color = S.prefs.hlColor; TP.ul.color = S.prefs.ulColor; TP.so.color = S.prefs.soColor;
+    TP.measure.unit = unit; TP.measure.scale = scale; TP.pen.shapes = $('#pShape', b).checked;
+    if ($('#pAll', b).checked) for (const p of S.pages) for (const a of p.annots) if (a.t === 'measure') { a.unit = unit; a.scale = scale; delete a.dec; }
+    setNight($('#pNight', b).checked);
+    if ($('#pPencil', b)) setPencilOnly($('#pPencil', b).checked, true);
+    pagesEl.classList.toggle('hidemarks', !S.prefs.showMarks);
+    S.pages.forEach(drawAnnots); markDirty(); renderProps();
+    toast('Einstellungen übernommen');
   });
+  const body = $('#dlgBody');
+  body.querySelector('.stab').addEventListener('click', e => {
+    const t = e.target.closest('[data-st]'); if (!t) return;
+    $$('[data-st]', body).forEach(x => x.setAttribute('aria-pressed', String(x === t)));
+    $$('[data-sp]', body).forEach(x => { x.hidden = x.dataset.sp !== t.dataset.st; });
+  });
+  $$('[data-sp]', body).forEach(x => { x.hidden = x.dataset.sp !== tab; });
+  const ex = () => { $('#pEx', body).textContent = fmtLen(100, $('#pUnit', body).value, +$('#pScale', body).value, +$('#pDec', body).value); };
+  ['#pUnit', '#pDec', '#pScale'].forEach(s => $(s, body).addEventListener('change', ex));
 }
+const metaDialog = () => settingsDialog('doc');
+const SCALES = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
 function duplicatePage() {
   commitEdit();
   const p = S.pages[S.cur]; if (!p) return;
@@ -2235,23 +2682,53 @@ function renderMarks() {
     (rows.length ? rows.join('') : '<p class="sempty">Noch keine Lesezeichen. Sie werden beim Speichern als Inhaltsverzeichnis in die PDF geschrieben und in jedem PDF-Programm angezeigt.</p>');
   $$('[data-i]', el).forEach(i => { i.outerHTML = icon(i.dataset.i); });
 }
+/* Kommentarliste: Art, markierter Text, Kommentar, Seite; filterbar und exportierbar */
+const NOTE_FILTERS = [['all', 'Alle'], ['cmt', 'Mit Kommentar'], ['mark', 'Textmarkierungen'], ['note', 'Notizen'], ['draw', 'Zeichnungen und Formen'], ['other', 'Sonstiges']];
+const noteGroup = a => (a.t === 'note' ? 'note' : a.t === 'mark' || a.t === 'hl' ? 'mark' : ['pen', 'rect', 'ellipse', 'line', 'arrow', 'check', 'cross'].includes(a.t) ? 'draw' : 'other');
+function noteEntry(a) {
+  let title = TOOL_NAMES[a.t] || a.t, quote = '', body = '';
+  if (a.t === 'note') { title = 'Notiz'; body = a.text || 'Leere Notiz'; }
+  else if (a.t === 'mark') { title = { hl: 'Markierung', ul: 'Unterstreichung', so: 'Durchstreichung' }[a.kind]; quote = a.text || ''; }
+  else if (a.t === 'text') { title = 'Text'; quote = a.text.split('\n')[0]; }
+  else if (a.t === 'stamp' || a.t === 'wm') quote = a.text;
+  else if (a.t === 'measure') body = measureLabel(a) + ((a.scale || 1) > 1 ? ` (1 : ${a.scale})` : '');
+  else if (a.t === 'pen') title = { fount: 'Füller', ball: 'Kugelschreiber', marker: 'Textmarker' }[penKind(a)] || 'Stift';
+  if (a.comment) body = a.comment;
+  return { title, quote, body };
+}
 function renderNotes() {
-  const el = $('#notesPanel'), rows = [];
+  const el = $('#notesPanel'), rows = [], f = S.noteFilter || 'all';
+  let total = 0;
   S.pages.forEach((p, i) => {
     for (const a of p.annots) {
       if (a.pn) continue;
-      let txt = TOOL_NAMES[a.t] || a.t, sub = '';
-      if (a.t === 'note') { txt = a.text || 'Leere Notiz'; sub = 'Notiz'; }
-      else if (a.t === 'text') { txt = a.text.split('\n')[0] || 'Text'; sub = 'Text'; }
-      else if (a.t === 'stamp' || a.t === 'wm') { sub = TOOL_NAMES[a.t]; txt = a.text; }
-      else if (a.t === 'measure') { sub = 'Messung'; txt = measureLabel(a) + ((a.scale || 1) > 1 ? ` (1 : ${a.scale})` : ''); }
-      else if (a.t === 'pen') { txt = { fount: 'Füller', ball: 'Kugelschreiber', marker: 'Textmarker' }[penKind(a)] || 'Stift'; }
+      total++;
+      if (f === 'cmt' ? !(a.comment || (a.t === 'note' && a.text)) : f !== 'all' && noteGroup(a) !== f) continue;
+      const { title, quote, body } = noteEntry(a);
       const col = a.t === 'redact' ? '#000000' : a.t === 'white' ? '#ffffff' : a.t === 'img' ? '#9aa1ad' : a.color || '#1b2130';
-      rows.push(`<button class="sitem" data-pid="${p.id}" data-aid="${a.id}"><span class="dot" style="background:${col}"></span><span class="tx">${esc(txt)}${sub ? `<small>${esc(sub)}</small>` : ''}</span><span class="pg">${i + 1}</span></button>`);
+      rows.push(`<button class="sitem" data-pid="${p.id}" data-aid="${a.id}"><span class="dot" style="background:${col}"></span><span class="tx"><small>${esc(title)}</small>${quote ? `<q>${esc(quote.length > 140 ? quote.slice(0, 139) + '…' : quote)}</q>` : ''}${body ? `<span class="cb">${esc(body)}</span>` : ''}</span><span class="pg">${i + 1}</span></button>`);
     }
   });
-  el.innerHTML = `<div class="sphead"><span>Kommentare und Markierungen</span><span>${rows.length}</span></div>` +
-    (rows.length ? rows.join('') : '<p class="sempty">Noch keine Kommentare. Notizen, Markierungen, Stempel und Zeichnungen erscheinen hier, geordnet nach Seiten.</p>');
+  el.innerHTML = `<div class="sphead"><span>Kommentare</span><span>${rows.length === total ? total : rows.length + ' / ' + total}</span></div>
+    <div class="nfbar"><select class="field" id="noteFilter" aria-label="Kommentare filtern">${NOTE_FILTERS.map(([k, l]) => `<option value="${k}"${k === f ? ' selected' : ''}>${l}</option>`).join('')}</select>
+    <button class="ibtn" id="noteExport" title="Kommentare als Textdatei speichern" aria-label="Kommentare exportieren"${total ? '' : ' disabled'}>${icon('save')}</button>
+    <button class="ibtn" id="noteSettings" title="Einstellungen für Kommentare" aria-label="Einstellungen für Kommentare">${icon('gear')}</button></div>` +
+    (rows.length ? rows.join('') : `<p class="sempty">${total ? 'Keine Einträge für diesen Filter.' : 'Noch keine Kommentare. Notizen, Markierungen, Stempel und Zeichnungen erscheinen hier, geordnet nach Seiten. Jedes Element kann über die Sprechblase einen eigenen Kommentar bekommen.'}</p>`);
+}
+async function exportNotes() {
+  const lines = [`Kommentare zu ${S.docName}`, `Erstellt am ${new Date().toLocaleString('de-DE')} von ${commentAuthor()}`, ''];
+  S.pages.forEach((p, i) => {
+    const list = p.annots.filter(a => !a.pn);
+    if (!list.length) return;
+    lines.push(`--- Seite ${i + 1} ---`);
+    for (const a of list) {
+      const { title, quote, body } = noteEntry(a);
+      lines.push(`• ${title}${quote ? `: „${quote}“` : ''}`);
+      if (body) lines.push(`  ${body.replace(/\n/g, '\n  ')}`);
+    }
+    lines.push('');
+  });
+  await saveBytes(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/plain;charset=utf-8' }), baseName() + '-Kommentare.txt');
 }
 function updateNoteBadge() {
   let n = 0;
@@ -2298,7 +2775,7 @@ function writeOutline(out, pageList) {
   const rootRef = ctx.nextRef(), top = build(items, rootRef);
   ctx.assign(rootRef, ctx.obj({ Type: 'Outlines', First: top[0], Last: top[top.length - 1], Count: PDFNumber.of(count(items)) }));
   out.catalog.set(PDFName.of('Outlines'), rootRef);
-  out.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
+  if (!S.meta.pageMode) out.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
 }
 
 /* ---------- Formularfelder (AcroForm) ausfüllen ---------- */
@@ -2533,6 +3010,106 @@ async function restoreSession() {
   }
 }
 
+/* ---------- Markierungen als echte PDF-Kommentare ---------- */
+const EXPORTABLE = new Set(['mark', 'hl', 'pen', 'rect', 'ellipse', 'line', 'arrow', 'text', 'stamp']);
+const PDF_MARK = { hl: 'Highlight', ul: 'Underline', so: 'StrikeOut' };
+const commentAuthor = () => S.prefs.author || S.meta.author || 'PDF Werkbank';
+function addTextNote(out, pg, [x, y], text, color) {
+  const c = hex2rgb(color), ctx = out.context;
+  const ann = ctx.obj({
+    Type: 'Annot', Subtype: 'Text', F: 4, Name: 'Comment', Open: false, Rect: [x, y - 16, x + 16, y],
+    Contents: PL.PDFHexString.fromText(text), T: PL.PDFHexString.fromText(commentAuthor()), M: PL.PDFString.fromDate(new Date()), C: [c.red, c.green, c.blue],
+  });
+  pg.node.addAnnot(ctx.register(ann));
+}
+async function exportAnnot(out, pg, a, T, R, getFont) {
+  const { PDFName, PDFHexString, PDFString } = PL, ctx = out.context;
+  const col = hex2rgb(a.color || '#000000'), C = [col.red, col.green, col.blue];
+  const n = v => Math.round(v * 1000) / 1000;
+  const rgbOp = op => `${n(C[0])} ${n(C[1])} ${n(C[2])} ${op}`;
+  const pathOps = sg => sg.map(sx => {
+    if (sx[0] === 'Z') return 'h';
+    const pts = [];
+    for (let i = 1; i < sx.length; i += 2) { const q = T(sx[i], sx[i + 1]); pts.push(n(q[0]), n(q[1])); }
+    return pts.join(' ') + ' ' + { M: 'm', L: 'l', C: 'c' }[sx[0]];
+  }).join(' ');
+  const vb = bbox(a), pad = (a.sw || 1) + 2;
+  const cs = [[vb.x - pad, vb.y - pad], [vb.x + vb.w + pad, vb.y - pad], [vb.x - pad, vb.y + vb.h + pad], [vb.x + vb.w + pad, vb.y + vb.h + pad]].map(([x, y]) => T(x, y));
+  const rect = [Math.min(...cs.map(q => q[0])), Math.min(...cs.map(q => q[1])), Math.max(...cs.map(q => q[0])), Math.max(...cs.map(q => q[1]))].map(n);
+  const extra = {}, res = {};
+  let subtype, ops = '', contents = a.comment || '';
+  const useGS = gs => { res.ExtGState = { G0: { Type: 'ExtGState', ...gs } }; ops = '/G0 gs ' + ops; };
+  const textOps = async (font, fname, size, color, lines) => {
+    const th = R * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+    res.Font = { ...(res.Font || {}), [fname]: font.ref };
+    return lines.map(([str, x, y]) => {
+      if (!str) return '';
+      const [px, py] = T(x, y), enc = font.encodeText(Array.from(str).map(ch => { try { font.encodeText(ch); return ch; } catch (e) { return '?'; } }).join(''));
+      return `BT /${fname} ${n(size)} Tf ${color} ${n(c)} ${n(s)} ${n(-s)} ${n(c)} ${n(px)} ${n(py)} Tm ${enc.toString()} Tj ET`;
+    }).join(' ');
+  };
+  switch (a.t) {
+    case 'mark': case 'hl': {
+      const rects = a.t === 'mark' ? a.rects : [{ x: a.x, y: a.y, w: a.w, h: a.h }], kind = a.t === 'hl' ? 'hl' : a.kind;
+      subtype = PDF_MARK[kind];
+      extra.QuadPoints = rects.flatMap(r => [T(r.x, r.y), T(r.x + r.w, r.y), T(r.x, r.y + r.h), T(r.x + r.w, r.y + r.h)].flat()).map(n);
+      if (kind === 'hl') {
+        const op = (a.op || 40) / 100;
+        ops = rgbOp('rg') + ' ' + rects.map(r => pathOps([['M', r.x, r.y], ['L', r.x + r.w, r.y], ['L', r.x + r.w, r.y + r.h], ['L', r.x, r.y + r.h], ['Z']]) + ' f').join(' ');
+        useGS({ ca: op, CA: op, BM: 'Multiply' }); extra.CA = op;
+      } else ops = rgbOp('RG') + ' ' + markSegs({ ...a, kind, rects }).map(([, q]) => `${n(q.w)} w ` + pathOps(q.d) + ' S').join(' ');
+      // wie in Acrobat: markierter Text im Kommentar, eigener Kommentar hat Vorrang
+      if (a.text) contents = a.comment ? `${a.comment}\n\n„${a.text}“` : a.text;
+      break;
+    }
+    case 'pen': {
+      subtype = 'Ink';
+      extra.InkList = [a.pts.flatMap(q => T(q[0], q[1]).map(n))];
+      extra.BS = { W: a.sw };
+      ops = penKind(a) === 'fount' ? rgbOp('rg') + ' ' + pathOps(penOutline(a)) + ' f' : `${n(a.sw)} w 1 J 1 j ` + rgbOp('RG') + ' ' + pathOps(segs(a)) + ' S';
+      const op = (a.op == null ? 100 : a.op) / 100;
+      if (op < 1 || penKind(a) === 'marker') { useGS({ ca: op, CA: op, ...(penKind(a) === 'marker' ? { BM: 'Multiply' } : {}) }); extra.CA = op; }
+      break;
+    }
+    case 'rect': case 'ellipse':
+      subtype = a.t === 'rect' ? 'Square' : 'Circle'; extra.BS = { W: a.sw };
+      ops = `${n(a.sw)} w ` + rgbOp('RG') + ' ' + pathOps(segs(a)) + ' S';
+      break;
+    case 'line': case 'arrow':
+      subtype = 'Line'; extra.L = [...T(a.x1, a.y1), ...T(a.x2, a.y2)].map(n); extra.BS = { W: a.sw };
+      if (a.t === 'arrow') extra.LE = [PDFName.of('None'), PDFName.of('OpenArrow')];
+      ops = `${n(a.sw)} w 1 J 1 j ` + rgbOp('RG') + ' ' + pathOps(segs(a)) + ' S';
+      break;
+    case 'text': {
+      subtype = 'FreeText';
+      const font = await getFont(a.font, a.bold), f = FONTS[a.font];
+      const lines = a.text.split('\n').map((ln, i) => [ln, a.x, a.y + f.bl * a.size + i * LH * a.size]);
+      if (a.bg) { const bc = hex2rgb(a.bg), b = bbox(a), pd = a.size * 0.18; ops += `${n(bc.red)} ${n(bc.green)} ${n(bc.blue)} rg ` + pathOps([['M', b.x - pd, b.y - pd * 0.4], ['L', b.x + b.w + pd, b.y - pd * 0.4], ['L', b.x + b.w + pd, b.y + b.h + pd * 0.4], ['L', b.x - pd, b.y + b.h + pd * 0.4], ['Z']]) + ' f '; }
+      ops += await textOps(font, 'F0', a.size, rgbOp('rg'), lines);
+      extra.DA = PDFString.of(`/Helv ${n(a.size)} Tf ${rgbOp('rg')}`);
+      contents = a.text + (a.comment ? '\n\n' + a.comment : '');
+      break;
+    }
+    case 'stamp': {
+      subtype = 'Stamp'; extra.Name = PDFName.of('Approved');
+      const g = stampGeom(a), font = await getFont('Helvetica', true);
+      const x = a.x + g.sw / 2, y = a.y + g.sw / 2, w = g.w - g.sw, h = g.h - g.sw;
+      ops = `${n(g.sw)} w ` + rgbOp('RG') + ' ' + pathOps([['M', x, y], ['L', x + w, y], ['L', x + w, y + h], ['L', x, y + h], ['Z']]) + ' S ';
+      ops += await textOps(font, 'F0', a.size, rgbOp('rg'), [[a.text, a.x + g.pad, a.y + g.base]]);
+      contents = a.comment || a.text;
+      break;
+    }
+    default: return false;
+  }
+  const ap = ctx.register(ctx.flateStream(ops, { Type: 'XObject', Subtype: 'Form', FormType: 1, BBox: rect, Resources: res }));
+  const dict = ctx.obj({
+    Type: 'Annot', Subtype: subtype, Rect: rect, F: 4, C, NM: PDFHexString.fromText(a.id),
+    T: PDFHexString.fromText(commentAuthor()), M: PDFString.fromDate(new Date()), Contents: PDFHexString.fromText(contents), AP: { N: ap }, ...extra,
+  });
+  pg.node.addAnnot(ctx.register(dict));
+  return true;
+}
+
 /* ---------- PDF erzeugen und speichern ---------- */
 async function buildPdf(pageList) {
   const { PDFDocument, StandardFonts, degrees, LineCapStyle, BlendMode, rgb } = PL;
@@ -2563,7 +3140,16 @@ async function buildPdf(pageList) {
     const T = (x, y) => vp.convertToPdfPoint(x, y);
     const svgMap = (x, y) => { const q = T(x, y); return [q[0], -q[1]]; };
     for (const a of p.annots) {
-      if (a.t === 'text') {
+      // als bearbeitbarer PDF-Kommentar speichern (mit eigener Darstellung)
+      if (S.prefs.exportMarks === 'annots' && EXPORTABLE.has(a.t)) {
+        try { if (await exportAnnot(out, pg, a, T, R, getFont)) continue; } catch (e) { console.warn('Kommentar wird eingebettet', e); }
+      }
+      if (a.t === 'mark') {
+        for (const [k, q] of markSegs(a)) {
+          if (k === 'fill') pg.drawSvgPath(dOf(q, svgMap), { x: 0, y: 0, color: hex2rgb(a.color), opacity: (a.op || 40) / 100, blendMode: BlendMode.Multiply });
+          else pg.drawSvgPath(dOf(q.d, svgMap), { x: 0, y: 0, borderColor: hex2rgb(a.color), borderWidth: q.w });
+        }
+      } else if (a.t === 'text') {
         const font = await getFont(a.font, a.bold), f = FONTS[a.font];
         if (a.bg) {
           const b = bbox(a), pd = a.size * 0.18, x = b.x - pd, y = b.y - pd * 0.4, w = b.w + 2 * pd, h = b.h + pd * 0.8;
@@ -2627,6 +3213,8 @@ async function buildPdf(pageList) {
         }
         pg.drawSvgPath(d, o);
       }
+      // Kommentar eines eingebetteten Elements bleibt als Notiz erhalten
+      if (a.comment && a.t !== 'note') { const b = bbox(a); addTextNote(out, pg, T(b.x + b.w, b.y), a.comment, a.color || '#ffd400'); }
     }
     await drawFormValues(pg, p, getFont, clean);
   }
@@ -2637,6 +3225,7 @@ async function buildPdf(pageList) {
   if (m.author) out.setAuthor(m.author);
   if (m.subject) out.setSubject(m.subject);
   if (m.keywords) out.setKeywords(m.keywords.split(/[,;]\s*/).filter(Boolean));
+  if (m.pageMode) out.catalog.set(PL.PDFName.of('PageMode'), PL.PDFName.of(m.pageMode));
   return out.save();
 }
 async function saveBytes(bytes, filename) {
@@ -2799,14 +3388,30 @@ function bindUI() {
   $('#zFront').onclick = () => zorder(true);
   $('#zBack').onclick = () => zorder(false);
   $('#bgSel').addEventListener('change', e => { setProp('bg', e.target.value); if (S.editing) S.editing.ta.focus(); });
-  $('#dupBtn').onclick = () => { const a = selAnnot(); if (a) pasteAnnot(a, 12); };
+  $('#dupBtn').onclick = duplicateSel;
+  $('#copyBtn').onclick = () => copySelection(false);
+  $('#pasteBtn').onclick = () => pasteClip();
+  $('#cmtBtn').onclick = () => { const a = selAnnot(); if (!a) return; const p = pageById(S.sel.pid); if (a.t === 'note') editNote(p, a); else editComment(p, a); };
+  // Einfügen aus der System-Zwischenablage: Bilder, Text oder die eigene Kopie
+  window.addEventListener('blur', () => { if (S.clip) S.clip.stale = true; });
+  document.addEventListener('paste', e => {
+    const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
+    if (typing || !$('#calc').hidden && $('#calc').contains(t)) return;
+    const dt = e.clipboardData, files = dt ? [...dt.files].filter(f => /^image\//.test(f.type)) : [];
+    const text = dt ? dt.getData('text/plain') : '';
+    e.preventDefault();
+    if (files.length) { insertImages(files); return; }
+    if (S.clip && (!S.clip.stale || !text || text === S.clip.sysText)) { pasteClip(); return; }
+    if (text) { insertTextAnnot(text); toast('Text eingefügt'); return; }
+    toast('Die Zwischenablage ist leer.');
+  });
 
   $('#btnMore').onclick = e => { e.stopPropagation(); if ($('#menu').hidden) openMenu(); else closeMenu(); };
   document.addEventListener('pointerdown', e => { if (!e.target.closest('#menu, #btnMore')) closeMenu(); });
   const ACTS = { new: async () => { if (S.dirty && !S.sample && !await ask('Ungespeicherte Änderungen verwerfen?', `Die Änderungen an „${S.docName}“ gehen verloren.`)) return; paperDialog('new'); },
     wm: watermarkDialog, pn: pageNumberDialog, dup: duplicatePage, png: exportPagePng, txt: exportText, meta: metaDialog,
     open: () => $('#fileOpen').click(), fit: () => setZoom(fitZoom()), merge: () => $('#fileMerge').click(), rotl: () => rotatePages(-90), rotr: () => rotatePages(90), blank: insertBlank, extract: extractPages, del: deletePages,
-    read: () => setReading(true), night: () => setNight(!S.night), pencil: () => setPencilOnly(!S.pencil.only), bm: addBookmark, share: sharePdf };
+    read: () => setReading(true), night: () => setNight(!S.night), pencil: () => setPencilOnly(!S.pencil.only), bm: addBookmark, share: sharePdf, calc: () => window.toggleCalc() };
   $('[data-act="share"]').hidden = !canShareFiles();
   $('#mPencil').hidden = !COARSE;
   setNight(lsGet('pdfwb.night') === '1');
@@ -2831,7 +3436,46 @@ function bindUI() {
     if (e.key === 'Enter') { e.stopPropagation(); row.click(); }
     if (e.key === 'F2') { e.preventDefault(); e.stopPropagation(); renameMark(row.dataset.bid); }
   });
-  $('#notesPanel').addEventListener('click', e => { const b = e.target.closest('[data-aid]'); if (b) gotoAnnot(b.dataset.pid, b.dataset.aid); });
+  $('#notesPanel').addEventListener('click', e => {
+    if (e.target.closest('#noteExport')) { exportNotes(); return; }
+    if (e.target.closest('#noteSettings')) { settingsDialog('cmt'); return; }
+    const b = e.target.closest('[data-aid]'); if (b) gotoAnnot(b.dataset.pid, b.dataset.aid);
+  });
+  $('#notesPanel').addEventListener('change', e => { if (e.target.id === 'noteFilter') { S.noteFilter = e.target.value; renderNotes(); } });
+  pagesEl.classList.toggle('hidemarks', !S.prefs.showMarks);
+
+  // Rechner
+  const calcEl = $('#calc');
+  const calc = window.WBCalc ? window.WBCalc.createCalculator(calcEl, {
+    insertText: t => { insertTextAnnot(winAnsiSafe(t)); toast('Ergebnis auf der Seite eingefügt'); },
+    insertImage: (url, w, h) => { const id = registerImage(url, 'png', w, h); placeImage(id, 300); toast('Graph auf der Seite eingefügt'); },
+    close: () => toggleCalc(false), toast,
+  }) : null;
+  window.toggleCalc = toggleCalc;
+  function toggleCalc(on = calcEl.hidden) {
+    if (!calc) { toast('Der Rechner konnte nicht geladen werden.'); return; }
+    commitEdit();
+    calcEl.hidden = !on;
+    $('#btnCalc').setAttribute('aria-pressed', String(on));
+    if (on) calc.open();
+  }
+  $('#btnCalc').onclick = () => toggleCalc();
+  $('#calcClose').onclick = () => toggleCalc(false);
+  // Rechner auf dem Desktop am Kopf verschieben
+  (() => {
+    const head = $('.calc-h', calcEl); let st = null;
+    head.addEventListener('pointerdown', e => {
+      if (e.target.closest('button') || innerWidth <= 760) return;
+      const r = calcEl.getBoundingClientRect(); st = { x: e.clientX, y: e.clientY, l: r.left, t: r.top }; head.setPointerCapture(e.pointerId);
+    });
+    head.addEventListener('pointermove', e => {
+      if (!st) return;
+      const l = clamp(st.l + e.clientX - st.x, 8, innerWidth - calcEl.offsetWidth - 8), t = clamp(st.t + e.clientY - st.y, 8, innerHeight - 60);
+      Object.assign(calcEl.style, { left: l + 'px', top: t + 'px', right: 'auto', bottom: 'auto' });
+    });
+    const end = () => { if (st) { st = null; calc && calc.redraw(); } };
+    head.addEventListener('pointerup', end); head.addEventListener('pointercancel', end);
+  })();
   $('#menu').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; closeMenu(); const f = ACTS[b.dataset.act]; if (f) f(); });
   $('#menu').addEventListener('keydown', e => {
     const items = $$('[data-act]', $('#menu')).filter(x => x.offsetParent), i = items.indexOf(document.activeElement);
@@ -2860,6 +3504,7 @@ function bindUI() {
   $('#shapeChk').addEventListener('change', e => { TP.pen.shapes = e.target.checked; });
   $('#eraseIn').addEventListener('input', e => { TP.eraser.size = +e.target.value; $('#eraseOut').textContent = TP.eraser.size + ' pt'; });
   $('#scaleSel').addEventListener('change', e => setProp('scale', +e.target.value));
+  $('#unitSel').addEventListener('change', e => setProp('unit', e.target.value));
   $('#pencilChip').addEventListener('click', () => setPencilOnly(!S.pencil.only));
   $('#colorPick').addEventListener('input', e => setProp('color', e.target.value, true));
   $('#colorPick').addEventListener('change', () => { S.propEdit = false; });
@@ -2978,19 +3623,21 @@ function bindUI() {
     if (typing) return;
     if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
     if (mod && k === 'y') { e.preventDefault(); redo(); return; }
-    if (mod && k === 'c') { const a = selAnnot(); if (a) { S.clip = clone(a); toast('Element kopiert'); } return; }
-    if (mod && k === 'v') { if (S.clip) { e.preventDefault(); pasteAnnot(S.clip, 12); } return; }
-    if (mod && k === 'd') { e.preventDefault(); const a = selAnnot(); if (a) pasteAnnot(a, 12); return; }
+    if (mod && k === 'c') { if (copySelection(false)) e.preventDefault(); return; }
+    if (mod && k === 'x') { if (S.tool !== 'objects' && copySelection(true)) e.preventDefault(); return; }
+    if (mod && k === 'v') return; // übernimmt das paste-Ereignis
+    if (mod && k === 'd') { e.preventDefault(); duplicateSel(); return; }
+    if (mod && k === 'a' && S.tool === 'select') { e.preventDefault(); const p = S.pages[S.cur]; if (p) setMulti(p.id, p.annots.map(a => a.id)); return; }
     if (mod && (k === '+' || k === '=')) { e.preventDefault(); zoomStep(1); return; }
     if (mod && k === '-') { e.preventDefault(); zoomStep(-1); return; }
     if (mod && k === '0') { e.preventDefault(); setZoom(fitZoom()); return; }
     if (mod || e.altKey) return;
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (S.csel) { e.preventDefault(); deleteContent(); }
-      else if (selAnnot()) { e.preventDefault(); deleteSel(); }
+      else if (selAnnot() || S.msel) { e.preventDefault(); deleteSel(); }
       return;
     }
-    if (e.key === 'Escape') { if (S.reading) setReading(false); else if (S.csel) setCsel(null, []); else if (S.sel) select(null); else setTool('select'); return; }
+    if (e.key === 'Escape') { if (S.reading) setReading(false); else if (S.csel) setCsel(null, []); else if (S.sel || S.msel) setMulti(null, []); else setTool('select'); return; }
     if (k === 'f') { setReading(!S.reading); return; }
     if (S.reading && (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ')) { e.preventDefault(); scrollToPage(Math.min(S.pages.length - 1, S.cur + 1)); return; }
     if (S.reading && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) { e.preventDefault(); scrollToPage(Math.max(0, S.cur - 1)); return; }
@@ -2999,6 +3646,13 @@ function bindUI() {
       e.preventDefault();
       const st = e.shiftKey ? 10 : 1;
       nudgeContent(e.key === 'ArrowLeft' ? -st : e.key === 'ArrowRight' ? st : 0, e.key === 'ArrowUp' ? -st : e.key === 'ArrowDown' ? st : 0);
+      return;
+    }
+    if (e.key.startsWith('Arrow') && S.msel) {
+      e.preventDefault();
+      const st = e.shiftKey ? 10 : 1, dx = e.key === 'ArrowLeft' ? -st : e.key === 'ArrowRight' ? st : 0, dy = e.key === 'ArrowUp' ? -st : e.key === 'ArrowDown' ? st : 0;
+      const now = Date.now(); if (now - lastNudge > 700) pushHist(); lastNudge = now;
+      const s = selectedAnnots(); s.list.forEach(a => Object.assign(a, translated(a, dx, dy))); drawAnnots(s.p); markDirty();
       return;
     }
     if (e.key.startsWith('Arrow') && selAnnot()) {
@@ -3012,6 +3666,7 @@ function bindUI() {
     if (e.key === 'PageUp') { e.preventDefault(); scrollToPage(Math.max(0, S.cur - 1)); return; }
     if (k === 'i') { $('#fileImg').click(); return; }
     if (k === 'u') { openSig(); return; }
+    if (k === 'z') { window.toggleCalc(); return; }
     if (KEYS[k]) setTool(KEYS[k]);
   });
   window.addEventListener('beforeunload', e => { if (S.dirty && !S.sample) { e.preventDefault(); e.returnValue = ''; } });

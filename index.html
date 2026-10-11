@@ -218,6 +218,51 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .note{font-size:12.5px;color:var(--muted);margin:0}
 .field.area{height:auto;min-height:110px;padding:8px 10px;resize:vertical;line-height:1.45;width:100%}
 
+/* Kommentare, Mehrfachauswahl, Einstellungen */
+.ov .cmk path{fill:var(--accent);stroke:#fff;stroke-width:.8}
+.ov .msel{fill:none;stroke:var(--accent);stroke-width:1;stroke-dasharray:2 2;vector-effect:non-scaling-stroke}
+.hidemarks .ov .ann,.hidemarks .hbl{display:none}
+.stab{align-self:flex-start;flex-wrap:wrap}
+.spage{display:flex;flex-direction:column;gap:12px}
+.chk.big{align-items:flex-start;gap:9px;font-size:13.5px;color:var(--ink);line-height:1.35}
+.chk.big input{margin-top:3px;flex:none}
+.chk.big small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.nfbar{display:flex;align-items:center;gap:4px;padding:0 2px 8px}
+.nfbar .field{flex:1;min-width:0;height:30px;font-size:12.5px}
+.nfbar .ibtn{width:30px;height:30px}
+.sitem q{display:block;font-style:italic;color:var(--ink);quotes:"„" "“"}
+.sitem .cb{display:block;color:var(--ink);margin-top:2px;white-space:pre-wrap}
+.sitem .tx small{font:500 10.5px/1.3 var(--f-mono);letter-spacing:.04em;text-transform:uppercase}
+.spanel .sitem .tx{-webkit-line-clamp:5}
+
+/* Rechner */
+.calc{position:fixed;z-index:44;right:16px;bottom:44px;width:min(380px,calc(100vw - 32px));max-height:calc(100vh - 120px);display:flex;flex-direction:column;gap:8px;padding:10px 12px 12px;background:var(--raise);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgb(0 0 0 / .22);overflow:auto}
+.calc>*{flex-shrink:0}
+.calc-h{display:flex;align-items:center;gap:8px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+.calc-h b{font:600 15px/1 var(--f-display)}
+.calc-hist{flex:0 0 auto;min-height:0;max-height:150px;overflow:auto;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.calc-hist .ch{display:flex;flex-direction:column;align-items:flex-end;border:0;background:transparent;padding:4px 6px;border-radius:6px;cursor:pointer;text-align:right;font:13px/1.35 var(--f-mono);color:var(--ink)}
+.calc-hist .ch:hover{background:var(--accent-soft)}
+.calc-hist .cs{color:var(--muted);word-break:break-all}
+.calc-hist .cr{font-weight:500;word-break:break-all}
+.calc-hist .err,.calc-out .err{color:var(--danger)}
+.calc-hist .chint{margin:0;font-size:12px;color:var(--muted);line-height:1.6}
+.calc-hist code{font:12px var(--f-mono);background:var(--chrome);padding:1px 4px;border-radius:4px}
+.calc-in textarea{width:100%;min-height:54px;resize:vertical;border:1px solid var(--line);border-radius:8px;background:var(--raise);color:var(--ink);padding:8px 10px;font:500 18px/1.35 var(--f-mono)}
+.calc-in textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.calc-out{min-height:22px;padding:4px 2px 0;text-align:right;font:600 16px/1.35 var(--f-mono);color:var(--accent);word-break:break-all}
+.calc-pad canvas{display:block;width:100%;height:140px;border:1px dashed var(--line);border-radius:8px;background:var(--chrome);touch-action:none;cursor:crosshair}
+.calc-pad small{color:var(--muted);font-size:11.5px}
+.calc-graph canvas{display:block;width:100%;height:220px;border:1px solid var(--line);border-radius:8px;touch-action:none;cursor:crosshair}
+.calc-gi{font-size:12px;line-height:1.5;color:var(--ink);padding:4px 2px}
+.calc-gi .gdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.calc-gi .gmuted{color:var(--muted)}
+.calc-keys{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.calc-keys button{height:36px;border:1px solid var(--line);border-radius:7px;background:var(--chrome);color:var(--ink);font:500 14px var(--f-mono);cursor:pointer}
+.calc-keys button:hover{border-color:var(--accent)}
+.calc-keys button.ok{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.calc .row .btn{height:30px;font-size:12px}
+
 /* Lesemodus */
 .readbar{position:fixed;z-index:45;top:calc(10px + env(safe-area-inset-top, 0px));right:12px;display:flex;align-items:center;gap:4px;padding:4px;border-radius:10px;background:color-mix(in srgb,var(--raise) 88%,transparent);box-shadow:0 6px 24px rgb(0 0 0 / .18);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .readbar .rp{font:500 12px var(--f-mono);color:var(--muted);padding:0 8px;font-variant-numeric:tabular-nums}
@@ -241,6 +286,8 @@ body.reading .forml .ff{pointer-events:auto}
   .field{height:36px;font-size:16px}
   input[type=range]{width:120px}
   .menu button{padding:12px 14px;font-size:15px}
+  .calc-keys button{height:44px;font-size:16px}
+  .calc .row .btn{height:36px}
   .stabs button{height:38px}
   .sitem{padding:10px 8px;font-size:14px}
   .sitem .x{opacity:1;font-size:18px;padding:0 4px}
@@ -272,6 +319,8 @@ body.reading .forml .ff{pointer-events:auto}
   .work .side{display:none}
   .work.thumbs-open .side{display:flex;position:absolute;left:0;top:0;bottom:0;width:min(260px,80vw);z-index:20;box-shadow:8px 0 30px rgb(0 0 0 / .2)}
   #btnRead{display:none}
+  .calc{left:0;right:0;bottom:0;width:auto;max-height:78vh;border-radius:14px 14px 0 0;padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px))}
+  .calc-h{cursor:default}
   .btn .lbl{display:none}
   .btn{padding:0 10px}
   .docname,.tlabel,.word,.zoomgrp,.pgtools,#btnMerge{display:none}
@@ -348,7 +397,8 @@ body.reading .forml .ff{pointer-events:auto}
         <button role="menuitem" data-act="png">Seite als Bild speichern (PNG)</button>
         <button role="menuitem" data-act="txt">Text exportieren (TXT)</button>
         <hr>
-        <button role="menuitem" data-act="meta">Dokumenteigenschaften …</button>
+        <button role="menuitem" data-act="calc">Rechner und Graphen</button>
+        <button role="menuitem" data-act="meta">Dokumenteinstellungen …</button>
       </div>
     </div>
   </header>
@@ -380,6 +430,8 @@ body.reading .forml .ff{pointer-events:auto}
     <button class="ibtn" id="btnSig" title="Unterschreiben (U)"><i data-i="sign"></i></button>
     <button class="ibtn" data-tool="stamp" title="Stempel (S)"><i data-i="stamp"></i></button>
     <button class="ibtn" data-tool="note" title="Notiz anheften (C)"><i data-i="note"></i></button>
+    <span class="vsep"></span>
+    <button class="ibtn" id="btnCalc" title="Rechner mit Graphen (Z)" aria-label="Rechner" aria-pressed="false"><i data-i="calc"></i></button>
     <span class="grow"></span>
     <div class="pgtools">
     <span class="tlabel">Seiten</span>
@@ -413,6 +465,9 @@ body.reading .forml .ff{pointer-events:auto}
     </label>
     <label class="prop" data-for="stamp">Stempel <select class="field" id="stampSel"></select></label>
     <label class="chk" data-for="penkind" title="Strich am Ende kurz halten: wird zu Linie, Rechteck oder Ellipse"><input type="checkbox" id="shapeChk" checked> Formen erkennen</label>
+    <label class="prop" data-for="scale">Einheit
+      <select class="field" id="unitSel"><option value="mm">mm</option><option value="cm">cm</option><option value="m">m</option><option value="in">Zoll</option><option value="ft">Fuß</option><option value="pt">pt</option></select>
+    </label>
     <label class="prop" data-for="scale">Maßstab
       <select class="field" id="scaleSel"><option value="1">1 : 1</option><option value="2">1 : 2</option><option value="5">1 : 5</option><option value="10">1 : 10</option><option value="20">1 : 20</option><option value="50">1 : 50</option><option value="100">1 : 100</option><option value="1000">1 : 1000</option></select>
     </label>
@@ -424,7 +479,10 @@ body.reading .forml .ff{pointer-events:auto}
     <button class="ibtn" id="cRotR" title="Auswahl rechts drehen" aria-label="Auswahl rechts drehen" hidden><i data-i="rotr"></i></button>
     <button class="ibtn" id="zBack" title="In den Hintergrund" aria-label="In den Hintergrund" hidden><i data-i="back"></i></button>
     <button class="ibtn" id="zFront" title="In den Vordergrund" aria-label="In den Vordergrund" hidden><i data-i="front"></i></button>
-    <button class="ibtn" id="dupBtn" title="Duplizieren (Strg+D)" aria-label="Duplizieren"><i data-i="copy"></i></button>
+    <button class="ibtn" id="cmtBtn" title="Kommentar zum Element" aria-label="Kommentar" aria-pressed="false" hidden><i data-i="comment"></i></button>
+    <button class="ibtn" id="copyBtn" title="Kopieren (Strg+C)" aria-label="Kopieren" hidden><i data-i="copy"></i></button>
+    <button class="ibtn" id="pasteBtn" title="Einfügen (Strg+V)" aria-label="Einfügen" hidden><i data-i="paste"></i></button>
+    <button class="ibtn" id="dupBtn" title="Duplizieren (Strg+D)" aria-label="Duplizieren"><i data-i="dup"></i></button>
     <button class="ibtn warn" id="delBtn" title="Element löschen (Entf)" aria-label="Element löschen"><i data-i="trash"></i></button>
   </div>
 
@@ -455,6 +513,38 @@ body.reading .forml .ff{pointer-events:auto}
 <input type="file" id="fileMerge" accept="application/pdf,.pdf" multiple hidden>
 <input type="file" id="fileImg" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
 
+<section class="calc" id="calc" hidden aria-label="Rechner">
+  <header class="calc-h">
+    <b>Rechner</b>
+    <div class="seg small" role="group" aria-label="Winkelmaß"><button data-ang="rad" aria-pressed="true" title="Bogenmaß">RAD</button><button data-ang="deg" aria-pressed="false" title="Grad">DEG</button></div>
+    <span class="grow"></span>
+    <button class="ibtn" id="calcWrite" title="Mit Stift oder Finger schreiben" aria-label="Schreibfeld" aria-pressed="false"><i data-i="pen"></i></button>
+    <button class="ibtn" id="calcClose" title="Schließen (Esc)" aria-label="Rechner schließen"><i data-i="close"></i></button>
+  </header>
+  <div class="calc-hist" id="calcHist"></div>
+  <div class="calc-in">
+    <textarea id="calcIn" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Formel eingeben oder mit dem Pencil hineinschreiben, z. B. f(x)=x²−2" aria-label="Formel"></textarea>
+    <div class="calc-out" id="calcOut" aria-live="polite"></div>
+  </div>
+  <div class="calc-pad" id="calcPad" hidden>
+    <canvas id="calcPadCanvas" aria-label="Schreibfeld für Formeln"></canvas>
+    <div class="row"><small id="calcPadGuess">Ziffern, + − × / ( ) = und Hochzahlen schreiben, Brüche mit Bruchstrich</small><span class="grow"></span><button class="btn" id="calcPadClear">Leeren</button></div>
+  </div>
+  <div class="calc-graph" id="calcGraphWrap" hidden>
+    <canvas id="calcGraph" aria-label="Graph"></canvas>
+    <div class="calc-gi" id="calcGInfo"></div>
+    <div class="row"><button class="btn" id="calcGReset">Ausschnitt zurücksetzen</button><span class="grow"></span><button class="btn" id="calcGInsert">Graph in PDF einfügen</button></div>
+  </div>
+  <div class="calc-keys" id="calcKeys">
+    <button data-k="sin()">sin</button><button data-k="cos()">cos</button><button data-k="tan()">tan</button><button data-k="ln()">ln</button><button data-k="log()">log</button><button data-k="√()">√</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="÷">÷</button><button data-k="(">(</button><button data-k=")">)</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="×">×</button><button data-k="^">xʸ</button><button data-k="π">π</button>
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="−">−</button><button data-k="x">x</button><button data-k="=">=</button>
+    <button data-k="0">0</button><button data-k=",">,</button><button data-k="ans">ans</button><button data-k="+">+</button><button data-k="bs" title="Löschen">⌫</button><button data-k="ok" class="ok" title="Ausrechnen (Enter)">=↵</button>
+  </div>
+  <footer class="row"><button class="btn" id="calcClearHist">Verlauf leeren</button><span class="grow"></span><button class="btn primary" id="calcInsert">Ergebnis in PDF einfügen</button></footer>
+</section>
+
 <div class="readbar" id="readbar" hidden>
   <span class="rp" id="readPage">1 / 1</span>
   <button class="ibtn" id="readNight" title="Nachtmodus" aria-label="Nachtmodus" aria-pressed="false"><i data-i="moon"></i></button>
@@ -484,7 +574,7 @@ body.reading .forml .ff{pointer-events:auto}
   <div class="card small" role="dialog" aria-modal="true" aria-labelledby="noteTitle">
     <h2 id="noteTitle">Notiz</h2>
     <textarea class="field area" id="noteText" rows="5" placeholder="Kommentar schreiben …"></textarea>
-    <p class="note">Wird als Kommentar in der PDF gespeichert und in Acrobat, Vorschau und Browsern angezeigt.</p>
+    <p class="note" id="noteInfo">Wird als Kommentar in der PDF gespeichert und in Acrobat, Vorschau und Browsern angezeigt.</p>
     <div class="row end"><button class="btn" id="noteDelete" hidden>Löschen</button><span class="grow"></span><button class="btn" id="noteCancel">Abbrechen</button><button class="btn primary" id="noteOk">Fertig</button></div>
   </div>
 </div>
@@ -516,6 +606,7 @@ body.reading .forml .ff{pointer-events:auto}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="js/content-engine.js"></script>
+<script src="js/calc.js"></script>
 <script src="js/app.js"></script>
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
