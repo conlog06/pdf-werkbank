@@ -33,13 +33,15 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
   - **skalieren:** am Eckgriff ziehen
   - **drehen:** mit den Dreh-Knöpfen in der Leiste um 90°
   - **entfernen:** mit `Entf`. Der Hintergrund bleibt erhalten, es entsteht kein weißer Kasten.
+  - **Ebenen:** ganz nach vorne oder ganz nach hinten legen. Ein seitenfüllendes Hintergrundbild bleibt dabei hinten.
+  - **hervorheben:** Auswahl mit dem Textmarker markieren, der Text der Elemente landet in der Kommentarliste.
 - **Hilfslinien:** Beim Verschieben rasten Elemente an Seitenrand, Seitenmitte und an Kanten anderer Elemente ein. `Alt` gedrückt halten schaltet das Einrasten ab.
 - **Text ändern (E):** Vorhandenen Text antippen und direkt umschreiben. Sind alle Zeichen in der eingebetteten Schrift vorhanden, bleibt die Originalschrift. Sonst wird die Zeile in Helvetica neu gesetzt. Leer lassen entfernt die Zeile.
 - **Schwärzen (B):** Bereich aufziehen. Ein schwarzer Balken deckt ihn ab, und der Text darunter wird **zeichengenau aus der Datei gelöscht**, sodass er weder kopiert noch gesucht werden kann. Der Rest der Zeile bleibt an seinem Platz. Flächen und Bilder, die zu mindestens 90 % im Bereich liegen, werden ebenfalls entfernt.
 
 **Schreiben und Zeichnen**
 - **Stiftarten (P):** Füller (Strich folgt dem Druck), Kugelschreiber (gleichmäßig) und Textmarker (breit, durchscheinend). Jede Art merkt sich eigene Farbe und Stärke.
-- **Formerkennung:** Am Ende eines Strichs kurz halten. Die Werkbank macht daraus eine gerade Linie, ein Rechteck oder eine Ellipse. Eine erkannte Linie folgt danach noch dem Stift.
+- **Formerkennung:** Am Ende eines Strichs kurz halten (das Zittern des Pencil beim Halten wird ignoriert). Die Werkbank macht daraus eine gerade Linie, ein Rechteck oder eine Ellipse. Eine erkannte Linie folgt danach noch dem Stift.
 - **Radierer (G):** Über eigene Striche und Elemente wischen, um sie zu löschen. Die Größe ist einstellbar. Stifte mit Radiertaste radieren automatisch.
 - **Messen (Q):** Strecke ziehen, die Länge erscheint in der gewählten Einheit (mm, cm, m, Zoll, Fuß oder pt) mit einstellbaren Nachkommastellen. Mit Maßstab (1:1 bis 1:1000) für Zeichnungen und Pläne. Einheit pro Messung oder für alle in den Dokumenteinstellungen umstellbar.
 - Rechteck, Ellipse, Linie, Pfeil, Haken und Kreuz, Weiß abdecken.
@@ -47,13 +49,13 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 - Bilder einfügen, Unterschrift zeichnen oder tippen.
 
 **Kommentieren**
-- **Markieren, Unterstreichen, Durchstreichen:** Über den Text ziehen (auch über mehrere Zeilen) oder eine Zeile antippen. Die Markierung folgt Zeichen für Zeichen dem Text und merkt sich den markierten Wortlaut.
+- **Markieren, Unterstreichen, Durchstreichen:** Über den Text ziehen (auch über mehrere Zeilen) oder eine Zeile antippen. Die Markierung folgt Zeichen für Zeichen dem Text und merkt sich den markierten Wortlaut. Ein Strich oder Rahmen über Text, der daneben beginnt, rastet ebenfalls auf die Zeichen ein.
 - **Kommentar an jedem Element:** Markierungen, Formen, Striche und Textfelder können einen Kommentar bekommen (Sprechblasen-Knopf). Eine kleine Blase zeigt, wo einer steht.
 - **Notizen:** Als echter PDF-Kommentar gespeichert, sichtbar in Acrobat, Vorschau und Browsern.
 - **Stempel:** Genehmigt, Erledigt, Bezahlt, Entwurf, Kopie, Vertraulich, Abgelehnt, Dringend und das heutige Datum.
 - **Kommentarliste:** In der Seitenleiste stehen alle Notizen, Markierungen (mit Zitat), Stempel und Zeichnungen nach Seiten geordnet, filterbar nach Art. Antippen springt hin. Export als TXT.
 - **Beim Speichern:** wahlweise als echte PDF-Kommentare (Markierung, Unterstreichung, Freihand, Formen, Textfelder, Stempel bleiben in Acrobat und Vorschau bearbeitbar, mit Autor und Text) oder fest in die Seite eingebettet.
-- Eigene Elemente in den Vorder- oder Hintergrund legen.
+- Eigene Elemente in den Vorder- oder Hintergrund legen, oder **hinter den PDF-Inhalt** (z. B. eine Farbfläche unter dem Text). Auch so gespeichert.
 
 **Kopieren und Mehrfachauswahl**
 - Rahmen aufziehen, `Umschalt`/`Strg`+Klick oder `Strg+A` wählt mehrere Elemente. Gemeinsam verschieben, färben, löschen.

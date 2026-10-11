@@ -548,7 +548,7 @@ function createContentEngine(PL) {
     return s + ' Q';
   }
   function applyEdits(str, an, ce) {
-    if (!ce || (!ce.del?.length && !ce.rep && !ce.tf && !ce.red?.length && !ce.dup?.length)) return str;
+    if (!ce || (!ce.del?.length && !ce.rep && !ce.tf && !ce.red?.length && !ce.dup?.length && !ce.zf?.length && !ce.zb?.length)) return str;
     const byIdx = new Map(an.objects.map(o => [o.i, o]));
     const orig = i => str.slice(an.ops[i].start, an.ops[i].end);
     const del = new Set(ce.del || []), rep = ce.rep || {}, tf = ce.tf || {}, red = ce.red || [];
@@ -562,15 +562,20 @@ function createContentEngine(PL) {
       if (m) { if (rep[o.i] !== undefined || m.every(Boolean)) del.add(o.i); else masks.set(o.i, m); }
     }
     for (const i of del) { const o = byIdx.get(i); if (o) repl.set(i, deletionText(o, orig(i))); }
+    // Ebenen: zf = nach vorne (am Ende gezeichnet), zb = nach hinten (ganz am Anfang gezeichnet)
+    const zf = (ce.zf || []).filter(i => typeof i === 'number'), zb = (ce.zb || []).filter(i => typeof i === 'number');
+    const zset = new Set([...zf, ...zb]);
     for (const [k, A] of Object.entries(tf)) {
       const i = +k, o = byIdx.get(i);
-      if (!o || del.has(i) || isId(A)) continue;
+      if (!o || del.has(i) || isId(A) || zset.has(i)) continue;
       repl.set(i, deletionText(o, orig(i)));
       copies.push([i, A]);
     }
+    const zcopy = i => { const o = byIdx.get(i); if (!o || del.has(i)) return null; repl.set(i, deletionText(o, orig(i))); return [i, tf[i] || [1, 0, 0, 1, 0, 0]]; };
+    const front = zf.map(zcopy).filter(Boolean), back = zb.map(zcopy).filter(Boolean);
     for (const [k, t] of Object.entries(rep)) {
       const i = +k, o = byIdx.get(i);
-      if (!o || del.has(i) || (tf[k] && !isId(tf[k]))) continue;
+      if (!o || del.has(i) || (tf[k] && !isId(tf[k])) || zset.has(i)) continue;
       const r = replacementText(an, o, t);
       repl.set(i, r == null ? deletionText(o, orig(i)) : r);
     }
@@ -587,16 +592,18 @@ function createContentEngine(PL) {
     }
     out += str.slice(pos);
     // Kopien (Einfügen auf derselben Seite): zusätzlich zeichnen, Original bleibt
-    const extra = [];
+    const extra = [], backExtra = [];
     for (const d of ce.dup || []) for (const [i, A] of d.items) {
       const o = byIdx.get(i); if (!o) continue;
       const info = red.length ? (o.kind === 'text' ? redactMask(o, A, red) : (redactsObject(o, A, red) ? 'all' : null)) : null;
       if (info === 'all' || (Array.isArray(info) && info.every(Boolean))) continue;
-      extra.push(copyText(an, str, o, A, rep[i], Array.isArray(info) ? info : null));
+      (d.back ? backExtra : extra).push(copyText(an, str, o, A, rep[i], Array.isArray(info) ? info : null));
     }
-    if (!copies.length && !extra.length) return out;
+    if (!copies.length && !extra.length && !front.length && !back.length && !backExtra.length) return out;
     copies.sort((a, b) => a[0] - b[0]);
-    return 'q\n' + out + '\nQ\n' + copies.map(([i, A]) => copyText(an, str, byIdx.get(i), A, rep[i], masks.get(i))).concat(extra).join('\n') + '\n';
+    const cp = ([i, A]) => copyText(an, str, byIdx.get(i), A, rep[i], masks.get(i));
+    const under = back.map(cp).concat(backExtra);
+    return (under.length ? under.join('\n') + '\n' : '') + 'q\n' + out + '\nQ\n' + copies.map(cp).concat(extra, front.map(cp)).join('\n') + '\n';
   }
 
   /* Öffentliche Schnittstelle */

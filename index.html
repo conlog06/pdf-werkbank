@@ -138,6 +138,7 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .pages[data-draw] .page{touch-action:none}
 .pcv{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ov{position:absolute;inset:0;width:100%;height:100%;overflow:visible;display:block}
+.ov.un{pointer-events:none}
 .pnum{position:absolute;left:0;right:0;bottom:-24px;text-align:center;font:11px/1 var(--f-mono);color:var(--muted);pointer-events:none;font-variant-numeric:tabular-nums}
 .pages[data-tool="select"] .page{cursor:default}
 .pages[data-tool="text"] .page,.pages[data-tool="edittext"] .page{cursor:text}
@@ -479,6 +480,8 @@ body.reading .forml .ff{pointer-events:auto}
     <button class="ibtn" id="cRotR" title="Auswahl rechts drehen" aria-label="Auswahl rechts drehen" hidden><i data-i="rotr"></i></button>
     <button class="ibtn" id="zBack" title="In den Hintergrund" aria-label="In den Hintergrund" hidden><i data-i="back"></i></button>
     <button class="ibtn" id="zFront" title="In den Vordergrund" aria-label="In den Vordergrund" hidden><i data-i="front"></i></button>
+    <button class="ibtn" id="zUnder" title="Hinter den PDF-Inhalt legen (an/aus)" aria-label="Hinter den PDF-Inhalt legen" aria-pressed="false" hidden><i data-i="under"></i></button>
+    <button class="ibtn" id="cMark" title="Auswahl hervorheben (Textmarker)" aria-label="Auswahl hervorheben" hidden><i data-i="mark"></i></button>
     <button class="ibtn" id="cmtBtn" title="Kommentar zum Element" aria-label="Kommentar" aria-pressed="false" hidden><i data-i="comment"></i></button>
     <button class="ibtn" id="copyBtn" title="Kopieren (Strg+C)" aria-label="Kopieren" hidden><i data-i="copy"></i></button>
     <button class="ibtn" id="pasteBtn" title="Einfügen (Strg+V)" aria-label="Einfügen" hidden><i data-i="paste"></i></button>

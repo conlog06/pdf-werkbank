@@ -54,6 +54,8 @@ const ICONS = {
   so: 'M5 12h14M16 6.5C15 5 13.6 4.5 12 4.5c-2.5 0-4 1.3-4 3 0 1.5 1 2.3 3 3M8 17c1 1.6 2.4 2.5 4.3 2.5 2.6 0 4.2-1.4 4.2-3.3 0-.9-.3-1.6-.9-2.2',
   close: 'M6 6l12 12M18 6L6 18',
   front: 'M8 8h12v12H8zM4 16V4h12',
+  under: 'M12 3L2 8l10 5 10-5zM2 12.5l10 5 10-5M2 17l10 5 10-5',
+  mark: 'M3 6h18v5H3zM3 15h12M3 19h8',
   back: 'M4 4h12v12H4zM8 20h12V8',
   gear: 'M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6zM12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1',
   comment: 'M4 5h16v11H9l-5 4z',
@@ -143,7 +145,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const clone = o => JSON.parse(JSON.stringify(o));
 const pageById = id => S.pages.find(p => p.id === id);
-const hasCE = p => !!(p && p.ce && ((p.ce.del && p.ce.del.length) || (p.ce.rep && Object.keys(p.ce.rep).length) || (p.ce.tf && Object.keys(p.ce.tf).length) || (p.ce.red && p.ce.red.length) || (p.ce.dup && p.ce.dup.length)));
+const hasCE = p => !!(p && p.ce && ((p.ce.del && p.ce.del.length) || (p.ce.rep && Object.keys(p.ce.rep).length) || (p.ce.tf && Object.keys(p.ce.tf).length) || (p.ce.red && p.ce.red.length) || (p.ce.dup && p.ce.dup.length) || (p.ce.zf && p.ce.zf.length) || (p.ce.zb && p.ce.zb.length)));
 function ceKey(p) {
   if (!hasCE(p)) return '';
   const s = JSON.stringify(p.ce); let h = 5381;
@@ -530,7 +532,7 @@ async function ensureDerived(p) {
     for (const [dk, d] of S.derived) { if (S.derived.size <= 40) break; if (!live.has(dk)) { try { d.pdf.destroy(); } catch (e) { /* egal */ } S.derived.delete(dk); } }
   }
 }
-function newCE(p) { const c = p.ce || {}; return { del: [...(c.del || [])], rep: { ...(c.rep || {}) }, tf: { ...(c.tf || {}) }, red: (c.red || []).map(r => r.slice()), dup: (c.dup || []).map(d => ({ id: d.id, items: d.items.map(([i, A]) => [i, A.slice()]) })) }; }
+function newCE(p) { const c = p.ce || {}; return { del: [...(c.del || [])], rep: { ...(c.rep || {}) }, tf: { ...(c.tf || {}) }, red: (c.red || []).map(r => r.slice()), dup: (c.dup || []).map(d => ({ id: d.id, back: d.back, items: d.items.map(([i, A]) => [i, A.slice()]) })), zf: [...(c.zf || [])], zb: [...(c.zb || [])] }; }
 async function applyCE(p) {
   busy(true, 'Seite wird neu aufgebaut …');
   try { await ensureDerived(p); }
@@ -673,6 +675,42 @@ function rotateContent(dir) {
   const [cx, cy] = d2u(p)(u.x + u.w / 2, u.y + u.h / 2);
   const t = -dir * Math.PI / 2, c = Math.round(Math.cos(t)), s = Math.round(Math.sin(t));
   transformContent(p, cs.items, [c, s, -s, c, cx - cx * c + cy * s, cy - cx * s - cy * c]);
+}
+/* Ebenen der PDF-Inhalte: ganz nach vorne oder ganz nach hinten.
+   Ein seitenfüllender Hintergrund (Bild oder Fläche) bleibt dabei ganz hinten, sonst würde er alles verdecken. */
+async function zContent(front) {
+  const cs = S.csel; if (!cs) return;
+  const p = pageById(cs.pid), ids = cs.items.flatMap(it => it.ids);
+  const num = ids.filter(i => typeof i === 'number').sort((a, b) => a - b), strs = new Set(ids.filter(i => typeof i === 'string'));
+  pushHist();
+  const ce = newCE(p);
+  ce.zf = ce.zf.filter(i => !num.includes(i)); ce.zb = ce.zb.filter(i => !num.includes(i));
+  if (front) ce.zf.push(...num);
+  else {
+    const [W, H] = dims(p), first = num.length ? num[0] : Infinity;
+    const bg = (cItems(p) || []).filter(it => it.kind !== 'text' && it.kind !== 'copy' && it.ids[0] < first && it.box.w * it.box.h >= 0.8 * W * H).map(it => it.ids[0]);
+    ce.zb = bg.sort((a, b) => a - b).concat(num, ce.zb.filter(i => !bg.includes(i)));
+  }
+  for (const d of ce.dup) if (strs.has(d.id)) { if (front) delete d.back; else d.back = true; }
+  if (front && strs.size) ce.dup = ce.dup.filter(d => !strs.has(d.id)).concat(ce.dup.filter(d => strs.has(d.id)));
+  p.ce = ce; S.hover = null;
+  await applyCE(p);
+  const set = new Set(ids);
+  setCsel(p.id, (cItems(p) || []).filter(it => it.ids.some(i => set.has(i))));
+  toast(front ? 'In den Vordergrund gebracht' : 'In den Hintergrund gelegt');
+}
+/* Ausgewählte PDF-Inhalte hervorheben: Textmarkierung über den Elementen, mit deren Text */
+function markContent() {
+  const cs = S.csel; if (!cs) return;
+  const p = pageById(cs.pid), tp = TP.hl;
+  const rects = cs.items.map(it => ({ x: r2(it.box.x - 1), y: r2(it.box.y - 1), w: r2(it.box.w + 2), h: r2(it.box.h + 2) }));
+  const text = cs.items.map(it => it.text || '').filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  const a = { id: uid(), t: 'mark', kind: 'hl', rects, text, color: tp.color, op: tp.op };
+  if (rotOf(p) % 180) a.vert = true;
+  pushHist(); p.annots.push(a); markDirty(); drawAnnots(p);
+  setCsel(null, []);
+  setMsg(text ? `Hervorgehoben: „${text.length > 60 ? text.slice(0, 59) + '…' : text}“` : 'Hervorgehoben');
+  if (S.prefs.askComment) editComment(p, a);
 }
 let nudge = null;
 function nudgeContent(dx, dy) {
@@ -889,6 +927,7 @@ function sizePageEl(p, e) {
   e.wrap.style.height = H * S.zoom + 'px';
   e.wrap.style.setProperty('--z', S.zoom);
   e.svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  if (e.under) e.under.setAttribute('viewBox', `0 0 ${W} ${H}`);
 }
 function buildViewer() {
   io.disconnect();
@@ -898,12 +937,13 @@ function buildViewer() {
     const wrap = document.createElement('div'); wrap.className = 'page'; wrap.dataset.id = p.id;
     const cv = document.createElement('canvas'); cv.className = 'pcv'; cv.width = 1; cv.height = 1;
     const svg = document.createElementNS(SVGNS, 'svg'); svg.classList.add('ov');
+    const under = document.createElementNS(SVGNS, 'svg'); under.classList.add('ov', 'un'); // eigene Elemente hinter dem PDF-Inhalt
     const num = document.createElement('div'); num.className = 'pnum'; num.textContent = i + 1;
     const hbl = document.createElement('div'); hbl.className = 'hbl';
     const forml = document.createElement('div'); forml.className = 'forml';
-    wrap.append(cv, svg, hbl, forml, num);
+    wrap.append(under, cv, svg, hbl, forml, num);
     pagesEl.append(wrap);
-    const e = { wrap, cv, svg, hbl, forml, key: null, task: null };
+    const e = { wrap, cv, svg, under, hbl, forml, key: null, task: null };
     els.set(p.id, e); sizePageEl(p, e); drawAnnots(p); io.observe(wrap);
     buildFormLayer(p);
   });
@@ -926,7 +966,7 @@ async function renderPage(p) {
   const c = document.createElement('canvas'); c.className = 'pcv';
   c.width = Math.max(1, Math.floor(vp.width)); c.height = Math.max(1, Math.floor(vp.height));
   // Formularfelder zeichnet die Werkbank selbst als bearbeitbare Felder darüber
-  const task = proxy.render({ canvasContext: c.getContext('2d'), viewport: vp, annotationMode: PDFJS.AnnotationMode ? PDFJS.AnnotationMode.ENABLE_FORMS : undefined });
+  const task = proxy.render({ canvasContext: c.getContext('2d'), viewport: vp, annotationMode: PDFJS.AnnotationMode ? PDFJS.AnnotationMode.ENABLE_FORMS : undefined, background: 'rgba(0,0,0,0)' });
   e.task = task;
   try { await task.promise; } catch (err) { if (err && err.name !== 'RenderingCancelledException') console.error(err); return; }
   if (e.key !== key || els.get(p.id) !== e) return;
@@ -956,7 +996,7 @@ function drawAnnots(p) {
   const e = els.get(p.id); if (!e) return;
   const editId = S.editing ? S.editing.a.id : null;
   const vis = p.annots.filter(a => a.id !== editId);
-  const ann = vis.map(annotSVG).join('') + vis.filter(a => a.comment && a.t !== 'note').map(a => {
+  const ann = vis.filter(a => !a.under).map(annotSVG).join('') + vis.filter(a => a.comment && a.t !== 'note').map(a => {
     const b = bbox(a);
     return `<g class="cmk" transform="translate(${r2(b.x + b.w + 1)} ${r2(b.y - 1)})"><title>${esc(a.comment)}</title><path d="M0 -10h11a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5H5l-3.5 3v-3H0a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 0 -10z"/></g>`;
   }).join('');
@@ -978,6 +1018,7 @@ function drawAnnots(p) {
         `<rect class="selbox" x="${r2(u.x - pad)}" y="${r2(u.y - pad)}" width="${r2(u.w + 2 * pad)}" height="${r2(u.h + 2 * pad)}"/>`;
     }
   }
+  if (e.under) e.under.innerHTML = `<g class="ann">${vis.filter(a => a.under).map(annotSVG).join('')}</g>`;
   e.svg.innerHTML = `<g class="ann">${ann}</g><g class="hits">${hitsSVG(p)}</g><g class="cui">${cuiSVG(p)}</g><g class="draft"></g><g class="ui">${ui}</g>`;
   queueThumb(p);
   updateSideLater();
@@ -1216,7 +1257,10 @@ function renderProps() {
   $('#cEditBtn').hidden = !oneText;
   $('#cRotL').hidden = $('#cRotR').hidden = !cs;
   const selA = !cs && !S.cedit ? selAnnot() : null;
-  $('#zFront').hidden = $('#zBack').hidden = !selA;
+  $('#zFront').hidden = $('#zBack').hidden = !(selA || cs);
+  $('#zUnder').hidden = !selA || selA.t === 'note';
+  if (selA) $('#zUnder').setAttribute('aria-pressed', String(!!selA.under));
+  $('#cMark').hidden = !cs;
   $('#cmtBtn').hidden = !selA;
   $('#copyBtn').hidden = !(selA || S.msel || cs);
   $('#pasteBtn').hidden = !S.clip;
@@ -1560,8 +1604,9 @@ pagesEl.addEventListener('pointerdown', e => {
   }
   // Markieren, Unterstreichen, Durchstreichen: auf Text beginnen = Text auswählen wie in Acrobat
   if (SNAP_TOOLS.has(t)) {
-    const ch = charsOf(p), i = ch ? charAt(ch, pt, 3 / S.zoom) : -1;
-    if (i >= 0) { drag = { mode: 'tsel', p, pointerId: e.pointerId, tool: t, ch, i0: i, i1: i, start: pt, moved: false }; return; }
+    // Finger und Pencil treffen nicht so genau wie die Maus: größere Toleranz
+    const ch = charsOf(p), i = ch ? charAt(ch, pt, (e.pointerType === 'mouse' ? 3 : 9) / S.zoom) : -1;
+    if (i >= 0) { drag = { mode: 'tsel', p, pointerId: e.pointerId, tool: t, ch, i0: i, i1: i, start: pt, moved: false, ptype: e.pointerType }; return; }
   }
   const tp = TP[t] || {};
   let a;
@@ -1600,7 +1645,13 @@ function eraseAt(d, pt) {
 
 /* Formerkennung: Strich kurz halten → gerade Linie, Rechteck oder Ellipse */
 function recognizeShape(a) {
-  const P = a.pts; if (P.length < 5) return null;
+  // Punkte ausdünnen und das Zittern am Ende (beim Halten) abschneiden, sonst wirkt der Strich krumm und zu lang
+  const step = 3 / Math.max(S.zoom, 0.5), P = [];
+  for (const q of a.pts) { const l = P[P.length - 1]; if (!l || Math.hypot(q[0] - l[0], q[1] - l[1]) >= step) P.push(q); }
+  const last = a.pts[a.pts.length - 1], tail = 7 / Math.max(S.zoom, 0.5);
+  while (P.length > 2 && Math.hypot(P[P.length - 1][0] - last[0], P[P.length - 1][1] - last[1]) < tail) P.pop();
+  P.push(last);
+  if (P.length < 3) return null;
   let len = 0;
   for (let i = 1; i < P.length; i++) len += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
   const b = bbox(a), size = Math.max(b.w, b.h);
@@ -1636,7 +1687,7 @@ function tryShape(d) {
 window.addEventListener('pointermove', e => {
   if (drag && drag.pointerId != null && e.pointerId !== drag.pointerId) return;
   // verlorenes pointerup (Stift oder Maus schon abgehoben): Ziehen sauber beenden
-  if (drag && (e.pointerType === 'pen' || e.pointerType === 'mouse') && e.buttons === 0) { S.touchDrag = false; endDrag(); return; }
+  if (drag && e.buttons === 0 && (e.pointerType === 'mouse' || (e.pointerType === 'pen' && !e.pressure))) { S.touchDrag = false; endDrag(); return; }
   if (!drag) {
     const w = e.target && e.target.closest ? e.target.closest('.page') : null;
     let hov = null;
@@ -1728,12 +1779,14 @@ window.addEventListener('pointermove', e => {
       let movedFar = false;
       for (const ce of evs.length ? evs : [e]) {
         const q = ptIn(ce, el), l = a.pts[a.pts.length - 1], dist = Math.hypot(q[0] - l[0], q[1] - l[1]);
-        if (dist > 0.5 / S.zoom) { a.pts.push([r2(q[0]), r2(q[1]), r2(pressureOf(ce))]); if (dist * S.zoom > 1.2) movedFar = true; }
+        if (dist > 0.5 / S.zoom) a.pts.push([r2(q[0]), r2(q[1]), r2(pressureOf(ce))]);
+        // Halten erkennen: der Pencil zittert beim Stillhalten um 1–3 px, erst echte Bewegung startet die Zeit neu
+        if (!drag.anchor || Math.hypot(q[0] - drag.anchor[0], q[1] - drag.anchor[1]) * S.zoom > 6) { drag.anchor = q; movedFar = true; }
       }
       if (movedFar || !drag.hold) {
         clearTimeout(drag.hold);
         const d = drag;
-        if (TP.pen.shapes) d.hold = setTimeout(() => tryShape(d), 550);
+        if (TP.pen.shapes) d.hold = setTimeout(() => tryShape(d), 500);
       }
       drawDraft(drag.p, a);
       return;
@@ -1844,6 +1897,8 @@ function endDrag() {
   if (d.mode === 'draw') {
     drawDraft(d.p, null);
     const a = d.a;
+    // mit dem Markier-Werkzeug über Text gezogen: Markierung rastet auf die Zeichen ein
+    if (SNAP_TOOLS.has(d.tool) && markRegion(d.p, a, d.tool)) return;
     const ok = a.t === 'pen' ? a.pts.length >= 1 : (a.t === 'line' || a.t === 'arrow' || a.t === 'measure') ? Math.hypot(a.x2 - a.x1, a.y2 - a.y1) > 2 : a.w > 2 && a.h > 2;
     if (ok) { pushHist(); d.p.annots.push(a); markDirty(); drawAnnots(d.p); }
     else if (SNAP_TOOLS.has(d.tool)) snapToText(d.p, d.start, d.tool);
@@ -1859,6 +1914,8 @@ function cancelDrag(e) {
   if (d.mode === 'erase') { drawDraft(d.p, null); return; }
   // ein Pencil-Strich, den Safari abbricht, bleibt erhalten
   if (d.mode === 'draw' && d.ptype === 'pen' && d.a.t === 'pen' && d.a.pts.length > 2) { drag = d; endDrag(); return; }
+  // eine begonnene Textauswahl wird trotzdem markiert
+  if (d.mode === 'tsel' && d.moved) { drag = d; endDrag(); return; }
   if (['draw', 'marquee', 'cmove', 'cresize', 'tsel', 'amarq', 'mmove'].includes(d.mode)) { drawDraft(d.p, null); hideGhost(); if (d.mode === 'mmove' && d.moved) restoreMulti(d); }
   else if (d.moved) { Object.assign(d.a, d.orig); if (S.hist.length) S.hist.pop(); updateUndo(); drawAnnots(d.p); }
 }
@@ -1881,6 +1938,29 @@ async function applyRedaction(p, a) {
   toast('Geschwärzt: Der Inhalt darunter ist aus der PDF entfernt');
 }
 
+/* Rahmen oder Strich über Text → Textmarkierung der getroffenen Zeichen */
+function markRegion(p, a, tool) {
+  const ch = charsOf(p); if (!ch || !ch.flat.length) return false;
+  const r = a.t === 'line' ? { x: Math.min(a.x1, a.x2), y: Math.min(a.y1, a.y2), w: Math.abs(a.x2 - a.x1), h: Math.abs(a.y2 - a.y1) } : { x: a.x, y: a.y, w: a.w, h: a.h };
+  if (r.w < 3 && r.h < 3) return false;
+  let hit = [];
+  ch.flat.forEach((c, k) => {
+    if (!c.ch.trim()) return;
+    const cx = c.x + c.w / 2, cy = c.y + c.h / 2, pad = Math.max(2, c.h * 0.45);
+    if (cx >= r.x && cx <= r.x + r.w && cy >= r.y - pad && cy <= r.y + r.h + pad) hit.push(k);
+  });
+  if (!hit.length) return false;
+  const hs = hit.map(k => ch.flat[k].h).sort((x, y) => x - y), med = hs[hs.length >> 1];
+  if (a.t === 'hl' && r.h > med * 3.2) return false; // großer Rahmen bleibt Flächenmarkierung
+  if (r.h < med * 1.6) {
+    // dünner Strich: nur die Zeile, durch die er am ehesten geht
+    const my = r.y + r.h / 2, byLine = new Map();
+    for (const k of hit) { const c = ch.flat[k], d = Math.abs(c.y + c.h / 2 - my); if (!byLine.has(c.line) || d < byLine.get(c.line)) byLine.set(c.line, d); }
+    const best = [...byLine].sort((x, y) => x[1] - y[1])[0][0];
+    hit = hit.filter(k => ch.flat[k].line === best);
+  }
+  return !!createMark(p, ch, Math.min(...hit), Math.max(...hit), tool);
+}
 /* Markieren, Unterstreichen und Durchstreichen rasten auf Textzeilen ein */
 function snapToText(p, pt, tool) {
   const ch = charsOf(p), i = ch ? charAt(ch, pt, 8 / S.zoom) : -1;
@@ -3111,6 +3191,14 @@ async function exportAnnot(out, pg, a, T, R, getFont) {
 }
 
 /* ---------- PDF erzeugen und speichern ---------- */
+/* zuletzt gezeichneten Inhaltsstrom von pdf-lib an den Anfang der Seite stellen (= unter den Seiteninhalt) */
+function sinkStream(pg) {
+  const ref = pg.contentStreamRef; if (!ref) return;
+  const arr = pg.node.Contents(), i = arr && typeof arr.indexOf === 'function' ? arr.indexOf(ref) : null;
+  if (i == null) return;
+  arr.remove(i); arr.insert(0, ref);
+  pg.contentStream = undefined; pg.contentStreamRef = undefined;
+}
 async function buildPdf(pageList) {
   const { PDFDocument, StandardFonts, degrees, LineCapStyle, BlendMode, rgb } = PL;
   const out = await PDFDocument.create();
@@ -3139,9 +3227,13 @@ async function buildPdf(pageList) {
     const vp = proxyOf(p).getViewport({ scale: 1, rotation: R });
     const T = (x, y) => vp.convertToPdfPoint(x, y);
     const svgMap = (x, y) => { const q = T(x, y); return [q[0], -q[1]]; };
-    for (const a of p.annots) {
+    // Elemente „hinter dem PDF-Inhalt“ kommen zuerst in einen eigenen Inhaltsstrom, der vor den Seiteninhalt gestellt wird
+    const unders = p.annots.filter(a => a.under && a.t !== 'note');
+    let sunk = !unders.length;
+    for (const a of unders.concat(p.annots.filter(a => !(a.under && a.t !== 'note')))) {
+      if (!sunk && !a.under) { sinkStream(pg); sunk = true; }
       // als bearbeitbarer PDF-Kommentar speichern (mit eigener Darstellung)
-      if (S.prefs.exportMarks === 'annots' && EXPORTABLE.has(a.t)) {
+      if (S.prefs.exportMarks === 'annots' && EXPORTABLE.has(a.t) && !a.under) {
         try { if (await exportAnnot(out, pg, a, T, R, getFont)) continue; } catch (e) { console.warn('Kommentar wird eingebettet', e); }
       }
       if (a.t === 'mark') {
@@ -3216,6 +3308,7 @@ async function buildPdf(pageList) {
       // Kommentar eines eingebetteten Elements bleibt als Notiz erhalten
       if (a.comment && a.t !== 'note') { const b = bbox(a); addTextNote(out, pg, T(b.x + b.w, b.y), a.comment, a.color || '#ffd400'); }
     }
+    if (!sunk) sinkStream(pg);
     await drawFormValues(pg, p, getFont, clean);
   }
   writeOutline(out, pageList);
@@ -3379,6 +3472,7 @@ function bindUI() {
   $('#cRotL').onclick = () => rotateContent(-1);
   $('#cRotR').onclick = () => rotateContent(1);
   const zorder = front => {
+    if (S.csel && S.tool === 'objects') { zContent(front); return; }
     const a = selAnnot(); if (!a) return;
     const p = pageById(S.sel.pid), i = p.annots.indexOf(a);
     if ((front && i === p.annots.length - 1) || (!front && i === 0)) return;
@@ -3387,6 +3481,14 @@ function bindUI() {
   };
   $('#zFront').onclick = () => zorder(true);
   $('#zBack').onclick = () => zorder(false);
+  $('#zUnder').onclick = () => {
+    const a = selAnnot(); if (!a || a.t === 'note') return;
+    const p = pageById(S.sel.pid);
+    pushHist(); if (a.under) delete a.under; else a.under = true;
+    drawAnnots(p); markDirty(); renderProps();
+    toast(a.under ? 'Liegt jetzt hinter dem PDF-Inhalt (verdeckte Stellen sind nicht sichtbar)' : 'Liegt wieder über dem PDF-Inhalt');
+  };
+  $('#cMark').onclick = markContent;
   $('#bgSel').addEventListener('change', e => { setProp('bg', e.target.value); if (S.editing) S.editing.ta.focus(); });
   $('#dupBtn').onclick = duplicateSel;
   $('#copyBtn').onclick = () => copySelection(false);
