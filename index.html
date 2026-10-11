@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f4fd8">
+<meta name="description" content="PDF-Editor im Browser: Texte direkt ändern, Inhalte entfernen, kommentieren, unterschreiben und Seiten verwalten.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PDF Werkbank">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>PDF Werkbank</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,10 +48,13 @@ button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
-#app{height:100%;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto}
+#app{height:100%;padding-top:env(safe-area-inset-top,0px);display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr)}
 
 /* Kopfzeile */
-.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 16px;background:var(--chrome);border-bottom:1px solid var(--line)}
+.top{display:flex;flex-wrap:nowrap;align-items:center;gap:8px 12px;padding:8px 16px;background:var(--chrome);border-bottom:1px solid var(--line)}
+.top>*{flex:none}
+.top>.brand{flex:0 1 auto}
+.top>.find{flex:0 1 auto}
 .brand{display:flex;align-items:center;gap:10px;min-width:0;margin-right:4px}
 .mark{width:26px;height:26px;flex:none}
 .word{font:600 17px/1 var(--f-display);letter-spacing:.01em;white-space:nowrap}
@@ -63,7 +75,7 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;st
 .zoomlbl{min-width:58px;height:32px;border:0;background:transparent;font:500 12px/1 var(--f-mono);color:var(--ink);cursor:pointer;border-radius:6px;font-variant-numeric:tabular-nums}
 .zoomlbl:hover{background:var(--accent-soft)}
 .find{display:flex;align-items:center;gap:2px;height:32px;padding:0 2px 0 8px;border:1px solid var(--line);border-radius:6px;background:var(--raise);min-width:0}
-.find input{border:0;background:transparent;outline:none;width:170px;min-width:0;font-size:13px}
+.find input{border:0;background:transparent;outline:none;width:150px;min-width:40px;font-size:13px}
 .find .cnt{font:11px var(--f-mono);color:var(--muted);min-width:44px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .find .ibtn{width:26px;height:26px}
 
@@ -102,9 +114,9 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .thumb.db::before,.thumb.da::after{content:"";position:absolute;left:10%;right:10%;height:3px;border-radius:2px;background:var(--accent)}
 .thumb.db::before{top:-2px}.thumb.da::after{bottom:-2px}
 
-.viewer{position:relative;overflow:auto;min-width:0;min-height:0}
+.viewer{position:relative;overflow:auto;min-width:0;min-height:0;touch-action:pan-x pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .pages{display:flex;flex-direction:column;align-items:center;gap:36px;padding:24px 16px 64px;width:max-content;min-width:100%}
-.page{position:relative;flex:none;background:#fff;box-shadow:var(--paper-shadow);touch-action:manipulation}
+.page{position:relative;flex:none;background:#fff;box-shadow:var(--paper-shadow);touch-action:pan-x pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .pages[data-draw] .page{touch-action:none}
 .pcv{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ov{position:absolute;inset:0;width:100%;height:100%;overflow:visible;display:block}
@@ -112,6 +124,9 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .pages[data-tool="select"] .page{cursor:default}
 .pages[data-tool="text"] .page,.pages[data-tool="edittext"] .page{cursor:text}
 .pages[data-draw] .page{cursor:crosshair}
+.hbl{position:absolute;inset:0;pointer-events:none}
+.hbl>div{position:absolute}
+.pages[data-tool="select"] .hbl>div{pointer-events:auto;touch-action:none}
 .ov .selbox{fill:none;stroke:var(--accent);stroke-width:1.2;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
 .ov .handle{fill:#fff;stroke:var(--accent);stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:nwse-resize}
 .ov .hit{fill:#ff9f1c;fill-opacity:.28}
@@ -153,16 +168,61 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
 .chk input{accent-color:var(--accent)}
 
+/* Menü und Formulare */
+.pgtools{display:flex;align-items:center;gap:2px}
+.menuwrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;min-width:250px;max-height:min(70vh,560px);overflow-y:auto;background:var(--raise);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgb(0 0 0 / .18);padding:6px;display:flex;flex-direction:column}
+.menu button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:9px 12px;border-radius:6px;font-size:13.5px;cursor:pointer;color:var(--ink)}
+.menu button:hover,.menu button:focus-visible{background:var(--accent-soft);outline:none}
+.menu button.danger{color:var(--danger)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:5px 4px}
+.menu .m-only{display:none}
+.form{display:flex;flex-direction:column;gap:12px}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.frow>.fld{flex:1 1 130px}
+.fld>span{font:500 11px/1.2 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fld .field{width:100%;height:34px}
+.fld input[type=range]{width:100%;height:34px}
+.fld input[type=color]{width:100%;height:34px}
+.frow{display:flex;flex-wrap:wrap;gap:12px}
+.note{font-size:12.5px;color:var(--muted);margin:0}
+.field.area{height:auto;min-height:110px;padding:8px 10px;resize:vertical;line-height:1.45;width:100%}
+
+/* Touch-Geräte: größere Bedienflächen */
+@media (pointer:coarse){
+  .ibtn{width:42px;height:42px}
+  .btn{height:40px}
+  .sw{width:28px;height:28px}
+  .find{height:40px}
+  .find .ibtn{width:34px;height:34px}
+  .field{height:36px;font-size:16px}
+  input[type=range]{width:120px}
+  .menu button{padding:12px 14px;font-size:15px}
+}
+
+/* Handy */
 @media (max-width:760px){
-  .work{grid-template-columns:minmax(0,1fr)}
+  #app{grid-template-rows:auto auto minmax(0,1fr) auto}
+  .top{order:1;padding:6px 12px;gap:6px;flex-wrap:wrap}
+  .top>.find{flex:1 1 100%;order:10}
+  .top{overflow:hidden}
+  .propbar{order:2;padding:4px 12px;min-height:44px;gap:10px}
+  .work{order:3;grid-template-columns:minmax(0,1fr);position:relative}
+  .toolbar{order:4;border-bottom:0;border-top:1px solid var(--line);padding:4px 8px calc(4px + env(safe-area-inset-bottom, 0px))}
+  .status{display:none}
   .work .thumbs{display:none}
-  .work.thumbs-open{grid-template-columns:132px minmax(0,1fr)}
-  .work.thumbs-open .thumbs{display:flex}
+  .work.thumbs-open .thumbs{display:flex;position:absolute;left:0;top:0;bottom:0;width:150px;z-index:20;box-shadow:8px 0 30px rgb(0 0 0 / .2)}
   .btn .lbl{display:none}
-  .btn{padding:0 9px}
-  .docname,.tlabel{display:none}
-  .find input{width:96px}
-  .status .opt{display:none}
+  .btn{padding:0 10px}
+  .docname,.tlabel,.word,.zoomgrp,.pgtools,#btnMerge{display:none}
+  .find input{width:100%}
+  .menu .m-only{display:block}
+  .menu{position:fixed;left:12px;right:12px;top:auto;bottom:calc(64px + env(safe-area-inset-bottom, 0px));min-width:0;max-height:70vh}
+  .pages{gap:24px;padding:16px 12px 40px}
+  .hint{white-space:normal;min-width:180px;font-size:12px}
+  .modal{align-items:end;padding:0}
+  .modal .card{border-radius:14px 14px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom, 0px));max-height:90vh;overflow-y:auto}
+  #toast{bottom:calc(72px + env(safe-area-inset-bottom, 0px))}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -187,7 +247,7 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
       <button class="ibtn" id="btnRedo" title="Wiederholen (Strg+Y)" aria-label="Wiederholen"><i data-i="redo"></i></button>
     </div>
     <div class="grow"></div>
-    <div class="grp">
+    <div class="grp zoomgrp">
       <button class="ibtn" id="btnZoomOut" title="Verkleinern (Strg+−)" aria-label="Verkleinern"><i data-i="zout"></i></button>
       <button class="zoomlbl" id="zoomLbl" title="Auf 100 % setzen">100 %</button>
       <button class="ibtn" id="btnZoomIn" title="Vergrößern (Strg++)" aria-label="Vergrößern"><i data-i="zin"></i></button>
@@ -199,6 +259,30 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
       <span class="cnt" id="findCount"></span>
       <button class="ibtn" id="findPrev" title="Vorheriger Treffer" aria-label="Vorheriger Treffer"><i data-i="up"></i></button>
       <button class="ibtn" id="findNext" title="Nächster Treffer" aria-label="Nächster Treffer"><i data-i="down"></i></button>
+    </div>
+    <div class="menuwrap">
+      <button class="ibtn" id="btnMore" title="Weitere Funktionen" aria-label="Weitere Funktionen" aria-haspopup="menu" aria-expanded="false"><i data-i="more"></i></button>
+      <div class="menu" id="menu" role="menu" hidden>
+        <button role="menuitem" data-act="new">Neues leeres Dokument</button>
+        <button role="menuitem" data-act="open" class="m-only">PDF öffnen …</button>
+        <button role="menuitem" data-act="merge">Weitere PDF anhängen …</button>
+        <button role="menuitem" data-act="fit" class="m-only">Auf Seitenbreite zoomen</button>
+        <hr>
+        <button role="menuitem" data-act="wm">Wasserzeichen …</button>
+        <button role="menuitem" data-act="pn">Seitenzahlen …</button>
+        <hr>
+        <button role="menuitem" data-act="dup">Seite duplizieren</button>
+        <button role="menuitem" data-act="blank">Leere Seite einfügen</button>
+        <button role="menuitem" data-act="rotl" class="m-only">Seite links drehen</button>
+        <button role="menuitem" data-act="rotr" class="m-only">Seite rechts drehen</button>
+        <button role="menuitem" data-act="extract">Seite(n) als eigene PDF speichern</button>
+        <button role="menuitem" data-act="del" class="m-only danger">Seite löschen</button>
+        <hr>
+        <button role="menuitem" data-act="png">Seite als Bild speichern (PNG)</button>
+        <button role="menuitem" data-act="txt">Text exportieren (TXT)</button>
+        <hr>
+        <button role="menuitem" data-act="meta">Dokumenteigenschaften …</button>
+      </div>
     </div>
   </header>
 
@@ -213,6 +297,8 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
     <span class="vsep"></span>
     <button class="ibtn" data-tool="pen" title="Stift (P)"><i data-i="pen"></i></button>
     <button class="ibtn" data-tool="hl" title="Markieren (H)"><i data-i="hl"></i></button>
+    <button class="ibtn" data-tool="ul" title="Unterstreichen (N)"><i data-i="ul"></i></button>
+    <button class="ibtn" data-tool="so" title="Durchstreichen (D)"><i data-i="so"></i></button>
     <button class="ibtn" data-tool="rect" title="Rechteck (R)"><i data-i="rect"></i></button>
     <button class="ibtn" data-tool="ellipse" title="Ellipse (O)"><i data-i="ellipse"></i></button>
     <button class="ibtn" data-tool="line" title="Linie (L)"><i data-i="line"></i></button>
@@ -222,13 +308,17 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
     <button class="ibtn" data-tool="cross" title="Kreuz setzen (X)"><i data-i="cross"></i></button>
     <button class="ibtn" id="btnImg" title="Bild einfügen (I)"><i data-i="image"></i></button>
     <button class="ibtn" id="btnSig" title="Unterschreiben (U)"><i data-i="sign"></i></button>
+    <button class="ibtn" data-tool="stamp" title="Stempel (S)"><i data-i="stamp"></i></button>
+    <button class="ibtn" data-tool="note" title="Notiz anheften (C)"><i data-i="note"></i></button>
     <span class="grow"></span>
+    <div class="pgtools">
     <span class="tlabel">Seiten</span>
     <button class="ibtn" id="pgRotL" title="Seite links drehen" aria-label="Seite links drehen"><i data-i="rotl"></i></button>
     <button class="ibtn" id="pgRotR" title="Seite rechts drehen" aria-label="Seite rechts drehen"><i data-i="rotr"></i></button>
     <button class="ibtn" id="pgBlank" title="Leere Seite dahinter einfügen" aria-label="Leere Seite einfügen"><i data-i="blank"></i></button>
     <button class="ibtn" id="pgExtract" title="Seite(n) als eigene PDF speichern" aria-label="Seiten extrahieren"><i data-i="extract"></i></button>
     <button class="ibtn warn" id="pgDelete" title="Seite(n) löschen" aria-label="Seite löschen"><i data-i="trash"></i></button>
+    </div>
   </nav>
 
   <div class="propbar" id="propbar" aria-label="Eigenschaften">
@@ -242,6 +332,7 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
     </label>
     <label class="prop" data-for="font"><input class="field num" type="number" id="sizeIn" min="4" max="144" step="0.5" aria-label="Schriftgröße"> pt</label>
     <button class="ibtn boldbtn" data-for="font" id="boldBtn" title="Fett" aria-label="Fett" aria-pressed="false">B</button>
+    <label class="prop" data-for="stamp">Stempel <select class="field" id="stampSel"></select></label>
     <span class="hint" id="pHint"></span>
     <span class="grow"></span>
     <button class="ibtn" id="cEditBtn" title="Text bearbeiten (Enter)" aria-label="Text bearbeiten" hidden><i data-i="edittext"></i></button>
@@ -278,6 +369,23 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
   </div>
 </div>
 
+<div class="modal" id="dlg" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <h2 id="dlgTitle"></h2>
+    <div class="form" id="dlgBody"></div>
+    <div class="row end"><button class="btn" id="dlgCancel">Abbrechen</button><button class="btn primary" id="dlgOk">Übernehmen</button></div>
+  </div>
+</div>
+
+<div class="modal" id="noteModal" hidden>
+  <div class="card small" role="dialog" aria-modal="true" aria-labelledby="noteTitle">
+    <h2 id="noteTitle">Notiz</h2>
+    <textarea class="field area" id="noteText" rows="5" placeholder="Kommentar schreiben …"></textarea>
+    <p class="note">Wird als Kommentar in der PDF gespeichert und in Acrobat, Vorschau und Browsern angezeigt.</p>
+    <div class="row end"><button class="btn" id="noteDelete" hidden>Löschen</button><span class="grow"></span><button class="btn" id="noteCancel">Abbrechen</button><button class="btn primary" id="noteOk">Fertig</button></div>
+  </div>
+</div>
+
 <div class="modal" id="sigModal" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="sigTitle">
     <div class="card-head">
@@ -306,5 +414,10 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="js/content-engine.js"></script>
 <script src="js/app.js"></script>
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
 </body>
 </html>

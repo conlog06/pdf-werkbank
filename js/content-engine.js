@@ -216,11 +216,28 @@ function createContentEngine(PL) {
       if (f.asc < 0.5) f.asc = 0.8;
       if (f.desc > -0.05) f.desc = -0.2;
     }
+    if (f.bpc === 1 && sub !== 'Type3' && !f.widths.size) f.std = stdKey(base);
     const tu = look(fd, 'ToUnicode');
     if (tu && typeof tu === 'object' && !(tu instanceof PDFName)) { try { f.toUni = parseCMap(bytesToStr(streamBytes(tu))); } catch (e) { f.toUni = null; } }
     return f;
   }
-  const width = (f, code) => (f.widths.has(code) ? f.widths.get(code) : f.dw) * f.scale;
+  /* Standardschriften ohne Breitentabelle: Breiten kommen über setStdWidths aus pdf-lib */
+  let stdWidth = null;
+  function stdKey(base) {
+    const b = base.replace(/^[A-Z]{6}\+/, '').replace(/[\s_]/g, '');
+    const bold = /bold|black|heavy/i.test(b), ital = /italic|oblique/i.test(b);
+    let fam = null;
+    if (/^(helvetica|arial)/i.test(b)) fam = 'Helvetica';
+    else if (/^(times|timesnewroman)/i.test(b)) fam = 'Times';
+    else if (/^courier/i.test(b)) fam = 'Courier';
+    if (!fam) return null;
+    if (fam === 'Times') return 'Times-' + (bold && ital ? 'BoldItalic' : bold ? 'Bold' : ital ? 'Italic' : 'Roman');
+    return fam + (bold && ital ? '-BoldOblique' : bold ? '-Bold' : ital ? '-Oblique' : '');
+  }
+  function width(f, code) {
+    if (!f.widths.has(code) && f.std && stdWidth) { const w = stdWidth(f.std, winChar(code)); if (w != null) return w * 0.001; }
+    return (f.widths.has(code) ? f.widths.get(code) : f.dw) * f.scale;
+  }
   function codesOf(f, bytes) {
     const out = [];
     if (f.bpc === 2) { for (let k = 0; k + 1 < bytes.length; k += 2) out.push((bytes[k] << 8) | bytes[k + 1]); }
@@ -456,6 +473,8 @@ function createContentEngine(PL) {
   function editPage(doc, page, an, ce) {
     setPageContent(doc, page, applyEdits(an.str, an, ce));
   }
-  return { analysePage, editPage, applyEdits, canEncode, joinText, lex, parseCMap };
+  const setStdWidths = fn => { stdWidth = fn; };
+  const STD_FONTS = ['Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique', 'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic', 'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique'];
+  return { analysePage, editPage, applyEdits, canEncode, joinText, lex, parseCMap, setStdWidths, STD_FONTS };
 }
 if (typeof module !== 'undefined') module.exports = createContentEngine;
