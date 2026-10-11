@@ -42,7 +42,7 @@
 }
 [hidden]{display:none!important}
 html,body{height:100%}
-body{margin:0;background:var(--desk);color:var(--ink);font:14px/1.4 var(--f-ui);overflow:hidden}
+body{margin:0;background:var(--desk);color:var(--ink);font:14px/1.4 var(--f-ui);overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 *{box-sizing:border-box}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -99,10 +99,28 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .hint{color:var(--muted);white-space:nowrap}
 
 /* Arbeitsfläche */
-.work{display:grid;grid-template-columns:176px minmax(0,1fr);min-height:0}
+.work{display:grid;grid-template-columns:196px minmax(0,1fr);min-height:0}
 .work.nothumbs{grid-template-columns:minmax(0,1fr)}
-.work.nothumbs .thumbs{display:none}
-.thumbs{overflow-y:auto;background:var(--chrome);border-right:1px solid var(--line);padding:14px 10px 40px;display:flex;flex-direction:column;align-items:center;gap:6px;scrollbar-width:thin}
+.work.nothumbs .side{display:none}
+.side{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--chrome);border-right:1px solid var(--line)}
+.stabs{display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid var(--line);flex:none}
+.stabs button{flex:1;display:grid;place-items:center;height:30px;border:0;background:transparent;border-radius:6px;color:var(--muted);cursor:pointer;position:relative}
+.stabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.stabs .badge{position:absolute;top:1px;right:4px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:600 9.5px/15px var(--f-mono)}
+.thumbs{flex:1;min-height:0;overflow-y:auto;padding:14px 10px 40px;display:flex;flex-direction:column;align-items:center;gap:6px;scrollbar-width:thin}
+.spanel{flex:1;min-height:0;overflow-y:auto;padding:10px 8px 40px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.sphead{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:2px 4px 8px;font:500 10.5px/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sphead .btn{height:26px;padding:0 8px;font-size:11.5px;text-transform:none;letter-spacing:0;font-family:var(--f-ui)}
+.sitem{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;line-height:1.35;color:var(--ink);border:0;background:transparent;text-align:left;width:100%}
+.sitem:hover,.sitem:focus-visible{background:color-mix(in srgb,var(--accent-soft) 70%,transparent);outline:none}
+.sitem .pg{margin-left:auto;font:11px var(--f-mono);color:var(--muted);flex:none;padding-top:1px;font-variant-numeric:tabular-nums}
+.sitem .dot{width:10px;height:10px;border-radius:3px;flex:none;margin-top:3px;box-shadow:inset 0 0 0 1px rgb(0 0 0 / .15)}
+.sitem .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sitem .tx small{display:block;color:var(--muted);font-size:11px}
+.sitem .x{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:0 2px;font-size:15px;line-height:1;flex:none;opacity:.0}
+.sitem:hover .x,.sitem:focus-within .x{opacity:1}
+.sitem input{width:100%;font-size:12.5px;padding:2px 4px;border:1px solid var(--accent);border-radius:4px;background:var(--raise)}
+.sempty{padding:14px 8px;color:var(--muted);font-size:12.5px;line-height:1.45}
 .thumb{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:8px;cursor:pointer;width:100%}
 .thumb:hover{background:color-mix(in srgb,var(--accent-soft) 60%,transparent)}
 .thumb.sel{background:var(--accent-soft)}
@@ -138,6 +156,15 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .ov .chov{fill:none;stroke:var(--accent);stroke-width:1;stroke-dasharray:3 2;vector-effect:non-scaling-stroke}
 .ov .marq{fill:var(--accent);fill-opacity:.08;stroke:var(--accent);stroke-width:1;stroke-dasharray:5 3;vector-effect:non-scaling-stroke}
 .pages[data-tool="objects"] .page{cursor:default}
+.ov .hov{fill:none;stroke:var(--accent);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.8}
+.forml{position:absolute;inset:0;pointer-events:none}
+.forml .ff{position:absolute;pointer-events:none;border:0;margin:0;padding:0 .25em;background:rgb(31 79 216 / .07);box-shadow:inset 0 0 0 1px var(--fbc,transparent);color:#111;font:calc(var(--z,1) * var(--fs,10px)) Helvetica,Arial,sans-serif;outline:none;border-radius:2px;resize:none;line-height:1.15}
+.forml textarea.ff{padding-top:.15em}
+.forml .ff:focus{background:rgb(255 255 255 / .95);box-shadow:0 0 0 1.5px var(--accent)}
+.forml button.ff{display:grid;place-items:center;padding:0;cursor:pointer;font-weight:700;font-size:calc(var(--z,1) * var(--fs,10px) * 1.1)}
+.forml select.ff{-webkit-appearance:none;appearance:none}
+.pages[data-tool="select"] .forml .ff{pointer-events:auto}
+.night .page{filter:invert(.9) hue-rotate(180deg)}
 .ted.ced{background:rgb(255 255 255 / .96);color:#1b2130;box-shadow:0 2px 10px rgb(0 0 0 / .18);border-radius:2px}
 .ted{position:absolute;z-index:3;margin:0;padding:0;border:0;outline:1.5px dashed var(--accent);outline-offset:3px;background:transparent;resize:none;overflow:hidden;white-space:pre;caret-color:var(--accent)}
 
@@ -191,8 +218,21 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 .note{font-size:12.5px;color:var(--muted);margin:0}
 .field.area{height:auto;min-height:110px;padding:8px 10px;resize:vertical;line-height:1.45;width:100%}
 
+/* Lesemodus */
+.readbar{position:fixed;z-index:45;top:calc(10px + env(safe-area-inset-top, 0px));right:12px;display:flex;align-items:center;gap:4px;padding:4px;border-radius:10px;background:color-mix(in srgb,var(--raise) 88%,transparent);box-shadow:0 6px 24px rgb(0 0 0 / .18);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.readbar .rp{font:500 12px var(--f-mono);color:var(--muted);padding:0 8px;font-variant-numeric:tabular-nums}
+body.reading #app{grid-template-rows:minmax(0,1fr)}
+body.reading .top,body.reading .toolbar,body.reading .propbar,body.reading .status,body.reading .side{display:none!important}
+body.reading .work{grid-template-columns:minmax(0,1fr)!important}
+body.reading .forml .ff{pointer-events:auto}
+.seg.small button{padding:4px 9px;font-size:12px}
+.pchip{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border:0;border-radius:14px;background:var(--accent-soft);color:var(--accent);font:500 12px/1 var(--f-ui);white-space:nowrap;cursor:pointer;flex:none}
+.pchip[aria-pressed="false"]{background:transparent;box-shadow:inset 0 0 0 1px var(--line);color:var(--muted)}
+.pchip svg.ico{width:15px;height:15px}
+.pages[data-draw][data-pencil] .page{touch-action:pan-x pan-y}
+
 /* Touch-Geräte: größere Bedienflächen */
-@media (pointer:coarse){
+@media (any-pointer:coarse){
   .ibtn{width:42px;height:42px}
   .btn{height:40px}
   .sw{width:28px;height:28px}
@@ -201,6 +241,22 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
   .field{height:36px;font-size:16px}
   input[type=range]{width:120px}
   .menu button{padding:12px 14px;font-size:15px}
+  .stabs button{height:38px}
+  .sitem{padding:10px 8px;font-size:14px}
+  .sitem .x{opacity:1;font-size:18px;padding:0 4px}
+}
+
+/* iPad und Tablets (Touch, mittlere Breite): Seitenfunktionen ins Menü, kompaktere Kopfzeile */
+@media (min-width:761px) and (max-width:1400px) and (any-pointer:coarse){
+  .pgtools,.word,#btnMerge,.docname{display:none}
+  .menu .m-only{display:block}
+  .find input{width:140px}
+  .toolbar{padding:4px 10px}
+  .vsep{margin:0 4px}
+}
+@media (min-width:761px) and (max-width:920px) and (any-pointer:coarse){
+  .zoomgrp{display:none}
+  .find input{width:120px}
 }
 
 /* Handy */
@@ -213,8 +269,9 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
   .work{order:3;grid-template-columns:minmax(0,1fr);position:relative}
   .toolbar{order:4;border-bottom:0;border-top:1px solid var(--line);padding:4px 8px calc(4px + env(safe-area-inset-bottom, 0px))}
   .status{display:none}
-  .work .thumbs{display:none}
-  .work.thumbs-open .thumbs{display:flex;position:absolute;left:0;top:0;bottom:0;width:150px;z-index:20;box-shadow:8px 0 30px rgb(0 0 0 / .2)}
+  .work .side{display:none}
+  .work.thumbs-open .side{display:flex;position:absolute;left:0;top:0;bottom:0;width:min(260px,80vw);z-index:20;box-shadow:8px 0 30px rgb(0 0 0 / .2)}
+  #btnRead{display:none}
   .btn .lbl{display:none}
   .btn{padding:0 10px}
   .docname,.tlabel,.word,.zoomgrp,.pgtools,#btnMerge{display:none}
@@ -256,6 +313,7 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
       <button class="ibtn" id="btnZoomIn" title="Vergrößern (Strg++)" aria-label="Vergrößern"><i data-i="zin"></i></button>
       <button class="ibtn" id="btnFit" title="Seitenbreite (Strg+0)" aria-label="An Breite anpassen"><i data-i="fit"></i></button>
     </div>
+    <button class="ibtn" id="btnRead" title="Lesemodus (F)" aria-label="Lesemodus"><i data-i="book"></i></button>
     <div class="find" role="search">
       <i data-i="search" style="color:var(--muted)"></i>
       <input id="findInput" type="search" placeholder="Suchen" aria-label="Im Dokument suchen" autocomplete="off">
@@ -266,16 +324,22 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
     <div class="menuwrap">
       <button class="ibtn" id="btnMore" title="Weitere Funktionen" aria-label="Weitere Funktionen" aria-haspopup="menu" aria-expanded="false"><i data-i="more"></i></button>
       <div class="menu" id="menu" role="menu" hidden>
-        <button role="menuitem" data-act="new">Neues leeres Dokument</button>
+        <button role="menuitem" data-act="new">Neues Dokument …</button>
         <button role="menuitem" data-act="open" class="m-only">PDF öffnen …</button>
         <button role="menuitem" data-act="merge">Weitere PDF anhängen …</button>
+        <button role="menuitem" data-act="share" hidden>Teilen …</button>
         <button role="menuitem" data-act="fit" class="m-only">Auf Seitenbreite zoomen</button>
+        <hr>
+        <button role="menuitem" data-act="read">Lesemodus</button>
+        <button role="menuitem" data-act="night" id="mNight">Nachtmodus für Seiten</button>
+        <button role="menuitem" data-act="pencil" id="mPencil">Nur Apple Pencil zeichnet</button>
         <hr>
         <button role="menuitem" data-act="wm">Wasserzeichen …</button>
         <button role="menuitem" data-act="pn">Seitenzahlen …</button>
+        <button role="menuitem" data-act="bm">Lesezeichen für diese Seite</button>
         <hr>
         <button role="menuitem" data-act="dup">Seite duplizieren</button>
-        <button role="menuitem" data-act="blank">Leere Seite einfügen</button>
+        <button role="menuitem" data-act="blank">Neue Seite / Notizpapier …</button>
         <button role="menuitem" data-act="rotl" class="m-only">Seite links drehen</button>
         <button role="menuitem" data-act="rotr" class="m-only">Seite rechts drehen</button>
         <button role="menuitem" data-act="extract">Seite(n) als eigene PDF speichern</button>
@@ -296,9 +360,11 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
     <button class="ibtn" data-tool="objects" title="PDF-Inhalte auswählen und entfernen (M)"><i data-i="objects"></i></button>
     <button class="ibtn" data-tool="edittext" title="Text in der PDF ändern (E)"><i data-i="edittext"></i></button>
     <button class="ibtn" data-tool="text" title="Neuen Text hinzufügen (T)"><i data-i="text"></i></button>
-    <button class="ibtn" data-tool="white" title="Abdecken / Schwärzen in Weiß (W)"><i data-i="white"></i></button>
+    <button class="ibtn" data-tool="white" title="Weiß abdecken (W)"><i data-i="white"></i></button>
+    <button class="ibtn" data-tool="redact" title="Schwärzen – entfernt den Inhalt darunter (B)"><i data-i="redact"></i></button>
     <span class="vsep"></span>
     <button class="ibtn" data-tool="pen" title="Stift (P)"><i data-i="pen"></i></button>
+    <button class="ibtn" data-tool="eraser" title="Radierer (G)"><i data-i="eraser"></i></button>
     <button class="ibtn" data-tool="hl" title="Markieren (H)"><i data-i="hl"></i></button>
     <button class="ibtn" data-tool="ul" title="Unterstreichen (N)"><i data-i="ul"></i></button>
     <button class="ibtn" data-tool="so" title="Durchstreichen (D)"><i data-i="so"></i></button>
@@ -306,6 +372,7 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
     <button class="ibtn" data-tool="ellipse" title="Ellipse (O)"><i data-i="ellipse"></i></button>
     <button class="ibtn" data-tool="line" title="Linie (L)"><i data-i="line"></i></button>
     <button class="ibtn" data-tool="arrow" title="Pfeil (A)"><i data-i="arrow"></i></button>
+    <button class="ibtn" data-tool="measure" title="Messen (Q)"><i data-i="measure"></i></button>
     <span class="vsep"></span>
     <button class="ibtn" data-tool="check" title="Haken setzen (K)"><i data-i="check"></i></button>
     <button class="ibtn" data-tool="cross" title="Kreuz setzen (X)"><i data-i="cross"></i></button>
@@ -318,7 +385,7 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
     <span class="tlabel">Seiten</span>
     <button class="ibtn" id="pgRotL" title="Seite links drehen" aria-label="Seite links drehen"><i data-i="rotl"></i></button>
     <button class="ibtn" id="pgRotR" title="Seite rechts drehen" aria-label="Seite rechts drehen"><i data-i="rotr"></i></button>
-    <button class="ibtn" id="pgBlank" title="Leere Seite dahinter einfügen" aria-label="Leere Seite einfügen"><i data-i="blank"></i></button>
+    <button class="ibtn" id="pgBlank" title="Neue Seite oder Notizpapier dahinter einfügen" aria-label="Neue Seite einfügen"><i data-i="blank"></i></button>
     <button class="ibtn" id="pgExtract" title="Seite(n) als eigene PDF speichern" aria-label="Seiten extrahieren"><i data-i="extract"></i></button>
     <button class="ibtn warn" id="pgDelete" title="Seite(n) löschen" aria-label="Seite löschen"><i data-i="trash"></i></button>
     </div>
@@ -326,6 +393,12 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 
   <div class="propbar" id="propbar" aria-label="Eigenschaften">
     <span class="ptarget" id="pTarget">Auswählen</span>
+    <button class="pchip" id="pencilChip" hidden aria-pressed="true" title="Umschalten: nur der Pencil zeichnet oder auch Finger"><i data-i="pencil"></i><span id="pencilLbl">Nur Pencil</span></button>
+    <div class="seg small" data-for="penkind" id="penKind" role="group" aria-label="Stiftart">
+      <button data-k="fount" aria-pressed="true" title="Füller: Strichstärke folgt dem Druck">Füller</button>
+      <button data-k="ball" aria-pressed="false" title="Kugelschreiber: gleichmäßige Linie">Kuli</button>
+      <button data-k="marker" aria-pressed="false" title="Textmarker: breit und durchscheinend">Marker</button>
+    </div>
     <div class="prop" data-for="color" id="swatches"></div>
     <label class="prop" data-for="color" title="Eigene Farbe"><input type="color" id="colorPick" value="#1f4fd8" aria-label="Eigene Farbe"></label>
     <label class="prop" data-for="stroke">Stärke <input type="range" id="strokeIn" min="0.5" max="12" step="0.5"><output id="strokeOut">2 pt</output></label>
@@ -339,6 +412,11 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
       <select class="field" id="bgSel"><option value="">Ohne</option><option value="#ffffff">Weiß</option><option value="#fff3a8">Gelb</option><option value="#e3e9fb">Hellblau</option><option value="#fde2e0">Rosa</option></select>
     </label>
     <label class="prop" data-for="stamp">Stempel <select class="field" id="stampSel"></select></label>
+    <label class="chk" data-for="penkind" title="Strich am Ende kurz halten: wird zu Linie, Rechteck oder Ellipse"><input type="checkbox" id="shapeChk" checked> Formen erkennen</label>
+    <label class="prop" data-for="scale">Maßstab
+      <select class="field" id="scaleSel"><option value="1">1 : 1</option><option value="2">1 : 2</option><option value="5">1 : 5</option><option value="10">1 : 10</option><option value="20">1 : 20</option><option value="50">1 : 50</option><option value="100">1 : 100</option><option value="1000">1 : 1000</option></select>
+    </label>
+    <label class="prop" data-for="esize">Größe <input type="range" id="eraseIn" min="4" max="40" step="1"><output id="eraseOut">12 pt</output></label>
     <span class="hint" id="pHint"></span>
     <span class="grow"></span>
     <button class="ibtn" id="cEditBtn" title="Text bearbeiten (Enter)" aria-label="Text bearbeiten" hidden><i data-i="edittext"></i></button>
@@ -351,7 +429,16 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
   </div>
 
   <main class="work" id="work">
-    <aside class="thumbs" id="thumbs" aria-label="Seitenübersicht"></aside>
+    <aside class="side" id="side" aria-label="Seitenleiste">
+      <div class="stabs" role="tablist">
+        <button role="tab" data-tab="pages" aria-selected="true" title="Seiten" aria-label="Seiten"><i data-i="pages"></i></button>
+        <button role="tab" data-tab="marks" aria-selected="false" title="Lesezeichen" aria-label="Lesezeichen"><i data-i="bookmark"></i></button>
+        <button role="tab" data-tab="notes" aria-selected="false" title="Kommentare" aria-label="Kommentare"><i data-i="note"></i><span class="badge" id="noteBadge" hidden></span></button>
+      </div>
+      <div class="thumbs" id="thumbs" role="tabpanel" aria-label="Seitenübersicht"></div>
+      <div class="spanel" id="marksPanel" role="tabpanel" aria-label="Lesezeichen" hidden></div>
+      <div class="spanel" id="notesPanel" role="tabpanel" aria-label="Kommentare" hidden></div>
+    </aside>
     <section class="viewer" id="viewer"><div class="pages" id="pages"></div></section>
   </main>
 
@@ -367,6 +454,12 @@ output{font:11.5px var(--f-mono);color:var(--ink);min-width:3.6em;font-variant-n
 <input type="file" id="fileOpen" accept="application/pdf,.pdf" hidden>
 <input type="file" id="fileMerge" accept="application/pdf,.pdf" multiple hidden>
 <input type="file" id="fileImg" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+
+<div class="readbar" id="readbar" hidden>
+  <span class="rp" id="readPage">1 / 1</span>
+  <button class="ibtn" id="readNight" title="Nachtmodus" aria-label="Nachtmodus" aria-pressed="false"><i data-i="moon"></i></button>
+  <button class="ibtn" id="readExit" title="Lesemodus beenden (Esc)" aria-label="Lesemodus beenden"><i data-i="close"></i></button>
+</div>
 
 <div id="drop" hidden>Datei hier ablegen</div>
 <div id="toast" role="status" aria-live="polite"></div>

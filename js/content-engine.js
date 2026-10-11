@@ -292,13 +292,15 @@ function createContentEngine(PL) {
       const f = ts.Tf ? getFont(ts.Tf) : getFont('');
       const Tfs = ts.Tfs, Th = ts.Th;
       let x = 0, minX = 0, maxX = 0, text = '';
-      const codes = [];
+      const codes = [], glyphs = [];
       for (const it of items) {
         if (typeof it === 'number') { x += -it / 1000 * Tfs * Th; }
         else if (it && it.str) {
           for (const c of codesOf(f, it.str)) {
             codes.push(c); f.used.add(c); text += uniOf(f, c);
-            x += (width(f, c) * Tfs + ts.Tc + (f.bpc === 1 && c === 32 ? ts.Tw : 0)) * Th;
+            const adv = (width(f, c) * Tfs + ts.Tc + (f.bpc === 1 && c === 32 ? ts.Tw : 0)) * Th;
+            glyphs.push([x, adv]);
+            x += adv;
           }
         }
         minX = Math.min(minX, x); maxX = Math.max(maxX, x);
@@ -312,6 +314,7 @@ function createContentEngine(PL) {
         base: tp(M, 0, ts.Ts), end: tp(M, x, ts.Ts), dir: [M[0], M[1]], fs: fsEff,
         st: { Tfs, Th, Tc: ts.Tc, Tw: ts.Tw, Tr: ts.Tr, TL: ts.TL, Ts: ts.Ts }, fill: gs.fill.slice(), blank: !text.trim(),
         Tm: Tm.slice(), Tlm: Tlm.slice(), lineX, items, gstate: stateOf(),
+        M, gy: [y0, y1], glyphs, bpc: f.bpc,
       });
       Tm = mul([1, 0, 0, 1, x, 0], Tm); lineX += x;
     }
@@ -429,11 +432,10 @@ function createContentEngine(PL) {
     if (!Tfs || !Th) return null;
     return `${prefix}[${fmt(-1000 * o.adv / (Tfs * Th))}] TJ`;
   }
-  function prefixFor(o, str) {
-    const op = o.op, src = str;
-    if (op === "'") return 'T* ';
-    if (op === '"') return `${fmt(o.st.Tw)} Tw ${fmt(o.st.Tc)} Tc T* `;
-    return src ? '' : '';
+  function prefixFor(o) {
+    if (o.op === "'") return 'T* ';
+    if (o.op === '"') return `${fmt(o.st.Tw)} Tw ${fmt(o.st.Tc)} Tc T* `;
+    return '';
   }
   function deletionText(o, original) {
     if (o.kind === 'text') {
@@ -475,7 +477,54 @@ function createContentEngine(PL) {
   const pdfName = n => '/' + String(n).replace(/[^!-~]|[#()<>[\]{}/%]/g, c => '#' + c.charCodeAt(0).toString(16).padStart(2, '0'));
   const hexStr = bytes => '<' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('') + '>';
   function itemsSrc(items) { return items.map(it => (typeof it === 'number' ? fmt(it) : it && it.str ? hexStr(it.str) : '')).join(' '); }
-  function copyText(an, str, o, A, repText) {
+
+  /* ---------- Schwärzen ----------
+     Zeichen, deren Box einen geschwärzten Bereich berührt, werden aus dem Textoperator
+     entfernt und durch einen gleich breiten Leerschritt ersetzt. Der Rest der Zeile
+     bleibt an seiner Stelle. Flächen und Bilder werden entfernt, wenn sie zu mindestens
+     90 % im Bereich liegen. */
+  const overlaps = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+  const covered = (b, r) => { const ix = Math.max(0, Math.min(b[2], r[2]) - Math.max(b[0], r[0])), iy = Math.max(0, Math.min(b[3], r[3]) - Math.max(b[1], r[1])); return (ix * iy) / Math.max(area(b), 1e-6); };
+  function redactMask(o, A, rects) {
+    if (!rects || !rects.length || o.kind !== 'text' || !o.glyphs) return null;
+    if (!rects.some(r => overlaps(xbox(o.bbox, A), r))) return null;
+    // Kernhöhe der Zeichen (Grundlinie bis etwa Versalhöhe), damit Nachbarzeilen unberührt bleiben
+    const y0 = o.st.Ts - 0.05 * o.st.Tfs, y1 = o.st.Ts + 0.6 * o.st.Tfs, M = A ? mul(o.M, A) : o.M;
+    let hit = false;
+    const mask = o.glyphs.map(([gx, adv]) => {
+      const b = boxOf([tp(M, gx, y0), tp(M, gx + adv, y0), tp(M, gx, y1), tp(M, gx + adv, y1)]);
+      const s = [b[0] + (b[2] - b[0]) * 0.2, b[1], b[2] - (b[2] - b[0]) * 0.2, b[3]];
+      const r = rects.some(rr => overlaps(s, rr));
+      if (r) hit = true;
+      return r;
+    });
+    return hit ? mask : null;
+  }
+  function redactedItems(o, mask) {
+    const { Tfs, Th } = o.st, out = [];
+    let g = 0;
+    for (const it of o.items) {
+      if (typeof it === 'number') { out.push(fmt(it)); continue; }
+      if (!it || !it.str) continue;
+      const bytes = it.str, step = o.bpc === 2 ? 2 : 1;
+      let run = [];
+      const flush = () => { if (run.length) { out.push(hexStr(run)); run = []; } };
+      for (let k = 0; k + step - 1 < bytes.length; k += step) {
+        const gl = o.glyphs[g];
+        if (mask[g]) { flush(); out.push(fmt(-1000 * (gl ? gl[1] : 0) / ((Tfs * Th) || 1))); }
+        else for (let j = 0; j < step; j++) run.push(bytes[k + j]);
+        g++;
+      }
+      flush();
+    }
+    return out.join(' ');
+  }
+  function redactsObject(o, A, rects) {
+    if (!rects || !rects.length || o.kind === 'text') return false;
+    const b = xbox(o.bbox, A);
+    return rects.some(r => covered(b, r) >= 0.9);
+  }
+  function copyText(an, str, o, A, repText, mask) {
     const g = o.gstate || { fill: '', stroke: '', line: '', gs: '', clips: [], ctm: [1, 0, 0, 1, 0, 0] };
     let s = 'q ';
     // nur eng anliegende Beschneidungen mitnehmen (z. B. zugeschnittene Bilder), nicht ganze Spalten oder Seiten
@@ -488,8 +537,8 @@ function createContentEngine(PL) {
     s += `${m6(M)} cm ${g.gs} ${g.line} ${g.fill} ${g.stroke} `;
     if (o.kind === 'path') s += str.slice(an.ops[o.ps].start, an.ops[o.i].end);
     else if (o.kind === 'text') {
-      let items = itemsSrc(o.items);
-      if (repText != null) {
+      let items = mask ? redactedItems(o, mask) : itemsSrc(o.items);
+      if (repText != null && !mask) {
         const enc = encodeText(an, o, repText);
         if (enc) items = hexStr(enc.codes.flatMap(c => (enc.f.bpc === 2 ? [c >> 8, c & 255] : [c])));
       }
@@ -499,11 +548,19 @@ function createContentEngine(PL) {
     return s + ' Q';
   }
   function applyEdits(str, an, ce) {
-    if (!ce || (!ce.del?.length && !ce.rep && !ce.tf)) return str;
+    if (!ce || (!ce.del?.length && !ce.rep && !ce.tf && !ce.red?.length)) return str;
     const byIdx = new Map(an.objects.map(o => [o.i, o]));
     const orig = i => str.slice(an.ops[i].start, an.ops[i].end);
-    const del = new Set(ce.del || []), rep = ce.rep || {}, tf = ce.tf || {};
-    const repl = new Map(), copies = [];
+    const del = new Set(ce.del || []), rep = ce.rep || {}, tf = ce.tf || {}, red = ce.red || [];
+    const repl = new Map(), copies = [], masks = new Map();
+    // Schwärzen: ganze Objekte im Bereich löschen, Textoperatoren zeichengenau ausdünnen
+    if (red.length) for (const o of an.objects) {
+      if (del.has(o.i)) continue;
+      const A = tf[o.i];
+      if (redactsObject(o, A, red)) { del.add(o.i); continue; }
+      const m = redactMask(o, A, red);
+      if (m) { if (rep[o.i] !== undefined || m.every(Boolean)) del.add(o.i); else masks.set(o.i, m); }
+    }
     for (const i of del) { const o = byIdx.get(i); if (o) repl.set(i, deletionText(o, orig(i))); }
     for (const [k, A] of Object.entries(tf)) {
       const i = +k, o = byIdx.get(i);
@@ -517,6 +574,10 @@ function createContentEngine(PL) {
       const r = replacementText(an, o, t);
       repl.set(i, r == null ? deletionText(o, orig(i)) : r);
     }
+    for (const [i, m] of masks) {
+      if (repl.has(i)) continue;
+      repl.set(i, `${prefixFor(byIdx.get(i))}[${redactedItems(byIdx.get(i), m)}] TJ`);
+    }
     const idxs = [...repl.keys()].sort((a, b) => an.ops[a].start - an.ops[b].start);
     let out = '', pos = 0;
     for (const i of idxs) {
@@ -527,7 +588,7 @@ function createContentEngine(PL) {
     out += str.slice(pos);
     if (!copies.length) return out;
     copies.sort((a, b) => a[0] - b[0]);
-    return 'q\n' + out + '\nQ\n' + copies.map(([i, A]) => copyText(an, str, byIdx.get(i), A, rep[i])).join('\n') + '\n';
+    return 'q\n' + out + '\nQ\n' + copies.map(([i, A]) => copyText(an, str, byIdx.get(i), A, rep[i], masks.get(i))).join('\n') + '\n';
   }
 
   /* Öffentliche Schnittstelle */
@@ -543,6 +604,13 @@ function createContentEngine(PL) {
   }
   const setStdWidths = fn => { stdWidth = fn; };
   const STD_FONTS = ['Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique', 'Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic', 'Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique'];
-  return { analysePage, editPage, applyEdits, canEncode, joinText, lex, parseCMap, setStdWidths, STD_FONTS, xbox, mul, inv, isId };
+  /* Für die Oberfläche: ist ein Objekt durch Schwärzen ganz ('all') oder teilweise (Maske) entfernt? */
+  function redactInfo(o, A, rects) {
+    if (!rects || !rects.length) return null;
+    if (o.kind !== 'text') return redactsObject(o, A, rects) ? 'all' : null;
+    const m = redactMask(o, A, rects);
+    return m && m.every(Boolean) ? 'all' : m;
+  }
+  return { analysePage, editPage, applyEdits, canEncode, joinText, lex, parseCMap, setStdWidths, STD_FONTS, xbox, mul, inv, isId, redactInfo };
 }
 if (typeof module !== 'undefined') module.exports = createContentEngine;
