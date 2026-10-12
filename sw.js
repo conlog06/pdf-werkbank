@@ -3,8 +3,8 @@
  * Eigene Dateien: erst Netz, dann Cache (Updates kommen sofort an).
  * Bibliotheken und Schriften vom CDN: erst Cache, dann Netz (sie ändern sich nie).
  */
-const VERSION = 'pdf-werkbank-v5';
-const APP = ['./', 'index.html', 'js/app.js', 'js/content-engine.js', 'js/calc.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
+const VERSION = 'pdf-werkbank-v6';
+const APP = ['./', 'index.html', 'library.html', 'js/app.js', 'js/content-engine.js', 'js/calc.js', 'js/library.js', 'js/store.js', 'js/sync.js', 'js/config.js', 'js/vendor/supabase.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 const CDN = [
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',

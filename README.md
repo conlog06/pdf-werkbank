@@ -9,6 +9,27 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
+## Bibliothek und Sync
+
+Unter **`library.html`** (Knopf ganz links im Editor) liegt die Bibliothek, aufgebaut wie bei GoodNotes:
+
+- **Ordner und Unterordner** mit 12 Farben und 32 Symbolen, Ordnerbaum in der Seitenleiste
+- Dokumente als **Cover mit Vorschau**, Kachel- oder Listenansicht, Sortierung, Suche über alle Ordner
+- **Zuletzt geöffnet**, **Favoriten**, **Papierkorb** mit Wiederherstellen
+- **Neues Notizbuch** (blanko, liniert, kariert, punktiert; A4, A5, Letter; mit farbigem Deckblatt)
+- PDFs importieren per Knopf oder Drag & Drop, Elemente per Drag & Drop in Ordner verschieben, Mehrfachauswahl
+- Dokumente aus der Bibliothek werden im Editor **automatisch gesichert**, mit allen Markierungen, Kommentaren und Änderungen (bleibt bearbeitbar, „Exportieren“ erzeugt die PDF-Datei)
+
+**Sync zwischen Webseite und Desktop-App** ([pdf-werkbank-app](https://github.com/conlog06/pdf-werkbank-app)) läuft über ein kostenloses [Supabase](https://supabase.com)-Projekt:
+
+1. Bei Supabase ein Projekt anlegen.
+2. Im Dashboard unter **SQL Editor** den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) ausführen. Das legt Tabelle, Dateispeicher und Zugriffsregeln an (jeder sieht nur seine eigenen Daten).
+3. Unter **Project Settings → API** die *Project URL* und den *anon public key* in [`js/config.js`](js/config.js) eintragen und pushen. Alternativ in der Bibliothek unten links unter **Sync** eintragen.
+4. Optional: unter **Authentication → Providers → Email** „Confirm email“ ausschalten, dann entfällt die Bestätigungsmail.
+5. In der Bibliothek unten links **Konto erstellen** bzw. **Anmelden**. Auf jedem weiteren Gerät mit demselben Konto anmelden.
+
+Abgeglichen werden Ordner (Name, Farbe, Symbol), Dokumente samt Bearbeitungsstand, Favoriten, Papierkorb und „Zuletzt geöffnet“. Änderungen anderer Geräte kommen live an. Offline geht alles weiter und wird beim nächsten Online-Sein nachgeholt. Wurde dasselbe Dokument auf zwei Geräten gleichzeitig geändert, bleibt die eigene Fassung als „Konflikt“-Kopie erhalten.
+
 ## iPad und Apple Pencil
 
 - **Pencil-Erkennung:** Sobald der Pencil das erste Mal die Seite berührt, schaltet die Werkbank auf **„Nur Pencil zeichnet“**. Dann zeichnet nur der Pencil, Finger scrollen und zoomen, und der aufgelegte Handballen hinterlässt keine Striche. Der Schalter „Nur Pencil“ in der Eigenschaftsleiste (oder im **⋯**-Menü) stellt um, die Einstellung bleibt gespeichert.
@@ -124,6 +145,9 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `index.html` | Oberfläche und Gestaltung |
 | `js/app.js` | Editor: Ansicht, Werkzeuge, Pencil und Touch-Gesten, Formulare, Lesezeichen, Seitenverwaltung, Export, Zwischenspeicher |
 | `js/calc.js` | Rechner: Formel-Parser, Gleichungslöser, Graphen und Handschrifterkennung |
+| `library.html`, `js/library.js` | Bibliothek: Ordner, Cover, Notizbücher, Papierkorb, Drag & Drop |
+| `js/store.js` | Lokale Bibliothek in IndexedDB (Ordner, Dokumente, Bearbeitungsstände) |
+| `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
 | `js/content-engine.js` | Liest den Inhaltsstrom einer PDF-Seite, ermittelt jedes gezeichnete Objekt mit Position und schreibt den Strom mit gelöschten, geänderten, verschobenen oder geschwärzten Objekten neu |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installierbare App und Offline-Betrieb |
 | `.github/workflows/pages.yml` | Veröffentlichung auf GitHub Pages |

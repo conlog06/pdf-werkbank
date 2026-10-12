@@ -41,6 +41,14 @@
   color-scheme:dark;
 }
 [hidden]{display:none!important}
+/* Bibliothek: Sicherungsstatus und Desktop-App-Fenster */
+.libstate{flex:none;font:500 11px/1 var(--f-mono);color:var(--muted);padding:4px 7px;border-radius:999px;background:var(--accent-soft);white-space:nowrap}
+.libstate[data-s="saved"]{color:#1f9d55;background:color-mix(in srgb,#1f9d55 14%,transparent)}
+.libstate[data-s="error"]{color:var(--danger);background:color-mix(in srgb,var(--danger) 14%,transparent)}
+.desktop .top{-webkit-app-region:drag}
+.desktop .top button,.desktop .top input,.desktop .top select,.desktop .top label,.desktop .top .find{-webkit-app-region:no-drag}
+.desktop.mac .top{padding-left:84px}
+.desktop.win .top{padding-right:150px}
 html,body{height:100%}
 body{margin:0;background:var(--desk);color:var(--ink);font:14px/1.4 var(--f-ui);overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 *{box-sizing:border-box}
@@ -342,10 +350,12 @@ body.reading .forml .ff{pointer-events:auto}
 
 <div id="app">
   <header class="top">
+    <button class="ibtn libbtn" id="btnLib" title="Zur Bibliothek" aria-label="Zur Bibliothek" hidden><i data-i="library"></i></button>
     <div class="brand">
       <svg class="mark" viewBox="0 0 26 26" aria-hidden="true"><path d="M5 2.5h11l5 5v16H5z" fill="var(--accent)"/><path d="M16 2.5v5h5" fill="none" stroke="var(--chrome)" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 18.5l1.2-3.4 6-6 2.2 2.2-6 6z" fill="var(--chrome)"/></svg>
       <span class="word">PDF Werkbank</span>
       <span class="docname" id="docName" title=""></span>
+      <span class="libstate" id="libState" hidden></span>
     </div>
     <div class="grp">
       <button class="btn" id="btnOpen" title="PDF öffnen (Strg+O)"><i data-i="open"></i><span class="lbl">Öffnen</span></button>
@@ -399,6 +409,7 @@ body.reading .forml .ff{pointer-events:auto}
         <button role="menuitem" data-act="txt">Text exportieren (TXT)</button>
         <hr>
         <button role="menuitem" data-act="calc">Rechner und Graphen</button>
+        <button role="menuitem" data-act="tolib" id="mToLib" hidden>In die Bibliothek übernehmen</button>
         <button role="menuitem" data-act="meta">Dokumenteinstellungen …</button>
       </div>
     </div>
@@ -608,6 +619,10 @@ body.reading .forml .ff{pointer-events:auto}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/vendor/supabase.js"></script>
+<script src="js/store.js"></script>
+<script src="js/sync.js"></script>
 <script src="js/content-engine.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/app.js"></script>

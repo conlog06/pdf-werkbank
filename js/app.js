@@ -68,6 +68,7 @@ const ICONS = {
   redact: 'M4 6h16v5H4zM4 15h9M4 19h12',
   measure: 'M3 15l12-12 6 6-12 12zM7 11l2 2M10 8l2 2M13 5l2 2',
   book: 'M4 5c3-1 6-1 8 1v14c-2-2-5-2-8-1zM20 5c-3-1-6-1-8 1v14c2-2 5-2 8-1z',
+  library: 'M4 4h4v16H4zM10 4h4v16h-4zM16.5 4.5l3.8 1-3.9 14.5-3.8-1z',
   moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',
   pages: 'M7 3h10v7H7zM7 14h10v7H7z',
   bookmark: 'M7 3h10v18l-5-4-5 4z',
@@ -867,6 +868,7 @@ async function openFiles(files, mode, noAsk) {
   if (!pdfs.length) { toast('Bitte eine PDF-Datei wählen.'); return; }
   if (S.busy) return;
   commitEdit();
+  if (mode === 'replace' && S.lib && LIB) { await openIntoLibrary(pdfs); return; }
   if (mode === 'replace' && S.dirty && !S.sample && !noAsk) {
     if (!await ask('Ungespeicherte Änderungen verwerfen?', `Wenn du „${pdfs[0].name}“ öffnest, gehen die Änderungen an „${S.docName}“ verloren.`)) return;
   }
@@ -3050,17 +3052,42 @@ const idbDel = k => idbReq('readwrite', s => s.delete(k));
 const idbKeys = () => idbReq('readonly', s => s.getAllKeys());
 const savedSrc = new Set();
 let autoT = 0;
-function scheduleAutosave() { if (S.sample || !S.pages.length) return; clearTimeout(autoT); autoT = setTimeout(autosave, 1500); }
+function scheduleAutosave() {
+  if (S.sample || !S.pages.length) return;
+  clearTimeout(autoT);
+  if (S.lib) { libState('pending'); autoT = setTimeout(libSave, 1200); return; }
+  autoT = setTimeout(autosave, 1500);
+}
+/* kompletter Bearbeitungsstand (Seiten, Elemente, Lesezeichen, Formulare); Quellen-PDFs separat */
+function docState(imgIds) {
+  if (!imgIds) { imgIds = new Set(); for (const p of S.pages) for (const a of p.annots) if (a.img) imgIds.add(a.img); }
+  return {
+    v: 1, savedAt: Date.now(), docName: S.docName, meta: S.meta, pages: S.pages, srcIds: [...S.sources.keys()],
+    images: [...S.images].filter(([id]) => imgIds.has(id)), uidN, blankSrc: S.blankSrc, dirty: S.dirty,
+    bookmarks: S.bookmarks, formVals: S.formVals, formTouched: [...S.formTouched], paperSrc: [...S.paperSrc],
+  };
+}
+/* gespeicherten Stand in den Editor laden (Sitzung oder Bibliothek) */
+async function applyState(sess, sourceOf) {
+  uidN = Math.max(uidN, sess.uidN || 0) + 1;
+  for (const id of sess.srcIds) {
+    const src = await sourceOf(id);
+    if (!src) throw new Error('Quelle fehlt');
+    await addSource(src.bytes, src.name, id);
+  }
+  S.images = new Map(sess.images || []);
+  S.pages = sess.pages; S.docName = sess.docName; S.meta = sess.meta || S.meta; S.blankSrc = sess.blankSrc || null;
+  S.bookmarks = sess.bookmarks || []; S.formVals = sess.formVals || {}; S.formTouched = new Set(sess.formTouched || []); S.paperSrc = new Map(sess.paperSrc || []);
+  S.sample = false; S.dirty = !!sess.dirty; S.hist = []; S.fut = []; S.cur = 0;
+  await Promise.all(S.pages.filter(hasCE).map(ensureDerived));
+  S.zoom = initialZoom(); buildViewer(); updateTitle(); updateUndo();
+}
 async function autosave() {
   try {
     for (const s of S.sources.values()) if (!savedSrc.has(s.id)) { await idbSet('src:' + s.id, { name: s.name, bytes: s.bytes }); savedSrc.add(s.id); }
     const imgIds = new Set();
     for (const p of S.pages) for (const a of p.annots) if (a.img) imgIds.add(a.img);
-    await idbSet('session', {
-      v: 1, savedAt: Date.now(), docName: S.docName, meta: S.meta, pages: S.pages, srcIds: [...S.sources.keys()],
-      images: [...S.images].filter(([id]) => imgIds.has(id)), uidN, blankSrc: S.blankSrc, dirty: S.dirty,
-      bookmarks: S.bookmarks, formVals: S.formVals, formTouched: [...S.formTouched], paperSrc: [...S.paperSrc],
-    });
+    await idbSet('session', docState(imgIds));
     const keep = new Set([...S.sources.keys()].map(k => 'src:' + k));
     for (const k of await idbKeys()) if (String(k).startsWith('src:') && !keep.has(k)) { await idbDel(k); savedSrc.delete(String(k).slice(4)); }
   } catch (e) { /* Zwischenspeicher nicht verfügbar */ }
@@ -3076,18 +3103,7 @@ async function restoreSession() {
   }
   busy(true, 'Sitzung wird wiederhergestellt …');
   try {
-    uidN = Math.max(uidN, sess.uidN || 0) + 1;
-    for (const id of sess.srcIds) {
-      const s = await idbGet('src:' + id);
-      if (!s) throw new Error('Quelle fehlt');
-      await addSource(s.bytes, s.name, id); savedSrc.add(id);
-    }
-    S.images = new Map(sess.images || []);
-    S.pages = sess.pages; S.docName = sess.docName; S.meta = sess.meta || S.meta; S.blankSrc = sess.blankSrc || null;
-    S.bookmarks = sess.bookmarks || []; S.formVals = sess.formVals || {}; S.formTouched = new Set(sess.formTouched || []); S.paperSrc = new Map(sess.paperSrc || []);
-    S.sample = false; S.dirty = !!sess.dirty; S.hist = []; S.fut = []; S.cur = 0;
-    await Promise.all(S.pages.filter(hasCE).map(ensureDerived));
-    S.zoom = initialZoom(); buildViewer(); updateTitle(); updateUndo();
+    await applyState(sess, async id => { const s = await idbGet('src:' + id); if (s) savedSrc.add(id); return s; });
     busy(false); setMsg('Sitzung wiederhergestellt');
     return true;
   } catch (e) {
@@ -3465,6 +3481,10 @@ function bindUI() {
   $('#btnOpen').onclick = () => $('#fileOpen').click();
   $('#btnMerge').onclick = () => $('#fileMerge').click();
   $('#btnSave').onclick = savePdf;
+  if ($('#btnLib')) $('#btnLib').onclick = () => goLibrary();
+  // beim Verlassen schnell noch sichern (Tab schließen, App wechseln)
+  document.addEventListener('visibilitychange', () => { if (document.hidden && S.lib && S.dirty) libSave(); });
+  window.addEventListener('pagehide', () => { if (S.lib && S.dirty) libSave(); });
   $('#fileOpen').onchange = e => { openFiles(e.target.files, 'replace'); e.target.value = ''; };
   $('#fileMerge').onchange = e => { openFiles(e.target.files, 'append'); e.target.value = ''; };
   $('#fileImg').onchange = e => { insertImages([...e.target.files]); e.target.value = ''; };
@@ -3519,9 +3539,10 @@ function bindUI() {
 
   $('#btnMore').onclick = e => { e.stopPropagation(); if ($('#menu').hidden) openMenu(); else closeMenu(); };
   document.addEventListener('pointerdown', e => { if (!e.target.closest('#menu, #btnMore')) closeMenu(); });
-  const ACTS = { new: async () => { if (S.dirty && !S.sample && !await ask('Ungespeicherte Änderungen verwerfen?', `Die Änderungen an „${S.docName}“ gehen verloren.`)) return; paperDialog('new'); },
+  const ACTS = { new: async () => { if (S.lib) { goLibrary('?new=notebook'); return; } if (S.dirty && !S.sample && !await ask('Ungespeicherte Änderungen verwerfen?', `Die Änderungen an „${S.docName}“ gehen verloren.`)) return; paperDialog('new'); },
     wm: watermarkDialog, pn: pageNumberDialog, dup: duplicatePage, png: exportPagePng, txt: exportText, meta: metaDialog,
     open: () => $('#fileOpen').click(), fit: () => setZoom(fitZoom()), merge: () => $('#fileMerge').click(), rotl: () => rotatePages(-90), rotr: () => rotatePages(90), blank: insertBlank, extract: extractPages, del: deletePages,
+    tolib: toLibrary, lib: () => goLibrary(),
     read: () => setReading(true), night: () => setNight(!S.night), pencil: () => setPencilOnly(!S.pencil.only), bm: addBookmark, share: sharePdf, calc: () => window.toggleCalc() };
   $('[data-act="share"]').hidden = !canShareFiles();
   $('#mPencil').hidden = !COARSE;
@@ -3732,7 +3753,7 @@ function bindUI() {
       return;
     }
     if (!$('#menu').hidden && e.key === 'Escape') { closeMenu(); return; }
-    if (mod && k === 's') { e.preventDefault(); savePdf(); return; }
+    if (mod && k === 's') { e.preventDefault(); if (S.lib && !e.shiftKey) { libSave().then(() => setMsg('In der Bibliothek gesichert')); } else savePdf(); return; }
     if (mod && k === 'o') { e.preventDefault(); $('#fileOpen').click(); return; }
     if (mod && k === 'f') { e.preventDefault(); fi.focus(); fi.select(); return; }
     if (typing) return;
@@ -3787,6 +3808,129 @@ function bindUI() {
   window.addEventListener('beforeunload', e => { if (S.dirty && !S.sample) { e.preventDefault(); e.returnValue = ''; } });
 }
 
+/* ---------- Bibliothek (Webseite und Desktop-App) ----------
+   ?doc=<id> öffnet ein Dokument aus der Bibliothek; jede Änderung wird dort automatisch gesichert. */
+const LIB = window.WBStore || null;
+function libState(s) {
+  const el = $('#libState'); if (!el || !S.lib) return;
+  el.hidden = false; el.dataset.s = s;
+  el.textContent = { pending: 'Änderungen …', saving: 'Sichert …', saved: 'Gesichert', error: 'Nicht gesichert' }[s] || '';
+  el.title = s === 'saved' ? 'Automatisch in der Bibliothek gesichert' : s === 'error' ? 'Konnte nicht in der Bibliothek sichern' : '';
+}
+async function pageThumb() {
+  const p = S.pages[0]; if (!p) return null;
+  try {
+    const proxy = proxyOf(p), base = proxy.getViewport({ scale: 1, rotation: rotOf(p) }), vp = proxy.getViewport({ scale: 360 / base.width, rotation: rotOf(p) });
+    const c = document.createElement('canvas'); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+    await proxy.render({ canvasContext: ctx, viewport: vp }).promise;
+    if (p.annots.length) {
+      const [W, H] = dims(p);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${c.width}" height="${c.height}" viewBox="0 0 ${W} ${H}">${p.annots.map(annotSVG).join('')}</svg>`;
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+    }
+    return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+  } catch (e) { return null; }
+}
+let libSaving = null;
+async function libSave() {
+  clearTimeout(autoT);
+  if (!S.lib || !LIB || !S.pages.length) return;
+  if (libSaving) { await libSaving; if (!S.dirty) return; }
+  libSaving = (async () => {
+    libState('saving');
+    try {
+      commitEdit();
+      const state = docState();
+      state.dirty = false;
+      const sources = [...S.sources.values()].map(x => ({ id: x.id, name: x.name, bytes: x.bytes }));
+      await LIB.saveDoc(S.lib.id, { state, sources, thumb: await pageThumb(), pages: S.pages.length });
+      S.dirty = false; updateTitle(); libState('saved');
+    } catch (e) { console.error(e); libState('error'); toast('In der Bibliothek sichern fehlgeschlagen: ' + (e.message || e)); }
+  })();
+  try { await libSaving; } finally { libSaving = null; }
+}
+async function openLibDoc(id) {
+  busy(true, 'Dokument wird geöffnet …');
+  try {
+    const rec = await LIB.loadDoc(id);
+    S.lib = { id, name: rec.item.name };
+    if (rec.state) {
+      await applyState(rec.state, async sid => rec.sources.find(x => x.id === sid));
+      S.docName = rec.item.name + '.pdf';
+    } else {
+      // frisch importiert: erste Quelle öffnen, Quell-ID bleibt die der Bibliothek
+      const src = rec.sources[0];
+      const pages = await addSource(src.bytes, rec.item.name + '.pdf', src.id);
+      S.bookmarks = await importOutline(src.id, pages);
+      S.pages = pages; S.docName = rec.item.name + '.pdf'; S.sample = false; S.dirty = false; S.hist = []; S.fut = []; S.cur = 0;
+      try {
+        const info = (await S.sources.get(src.id).pdf.getMetadata()).info || {};
+        S.meta = { title: info.Title || '', author: info.Author || '', subject: info.Subject || '', keywords: info.Keywords || '' };
+      } catch (e) { /* keine Metadaten */ }
+      S.zoom = initialZoom(); buildViewer(); updateTitle(); updateUndo();
+    }
+    S.dirty = false; updateTitle();
+    document.title = rec.item.name + ' · PDF Werkbank';
+    libState('saved'); libUI();
+    busy(false); setMsg('Aus der Bibliothek geöffnet · Änderungen werden automatisch gesichert');
+    // Vorschau nachziehen, falls noch keine da ist
+    if (!(await LIB.getBlob('thumb:' + id))) { const t = await pageThumb(); if (t) await LIB.putBlob('thumb:' + id, t); }
+    return true;
+  } catch (e) {
+    console.error(e); busy(false);
+    S.lib = null;
+    await ask('Dokument nicht verfügbar', e.message || String(e), 'Zur Bibliothek', 'Hier bleiben', false).then(y => { if (y) location.href = 'library.html'; });
+    return false;
+  }
+}
+async function goLibrary(extra = '') {
+  if (S.lib && S.dirty) await libSave();
+  else if (S.lib && libSaving) await libSaving;
+  location.href = 'library.html' + extra;
+}
+/* aktuelles (nicht gespeichertes) Dokument in die Bibliothek übernehmen */
+async function toLibrary() {
+  if (!LIB || S.lib || !S.pages.length) return;
+  busy(true, 'Wird in die Bibliothek übernommen …');
+  try {
+    const first = [...S.sources.values()][0];
+    const it = await LIB.importPdf(first.bytes, S.docName.replace(/\.pdf$/i, ''), null, { pages: S.pages.length });
+    S.lib = { id: it.id, name: it.name };
+    S.sample = false;
+    history.replaceState(null, '', 'index.html?doc=' + encodeURIComponent(it.id));
+    busy(false);
+    await libSave();
+    libUI();
+    try { await idbDel('session'); } catch (e) { /* egal */ }
+    toast(`„${it.name}“ ist jetzt in der Bibliothek`);
+  } catch (e) { console.error(e); busy(false); toast('Übernehmen fehlgeschlagen: ' + (e.message || e)); }
+}
+/* Öffnen im Bibliotheksmodus: neue PDFs in die Bibliothek legen und das erste öffnen */
+async function openIntoLibrary(pdfs) {
+  busy(true, 'PDF wird in die Bibliothek gelegt …');
+  try {
+    let first = null;
+    for (const f of pdfs) {
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      const it = await LIB.importPdf(bytes, f.name, null, {});
+      first = first || it;
+    }
+    if (S.dirty) await libSave();
+    location.href = 'index.html?doc=' + encodeURIComponent(first.id);
+  } catch (e) { busy(false); toast('Öffnen fehlgeschlagen: ' + (e.message || e)); }
+}
+function libUI() {
+  const b = $('#btnLib'); if (!b) return;
+  b.hidden = !LIB;
+  const m = $('#mToLib'); if (m) m.hidden = !LIB || !!S.lib;
+  const sv = $('#btnSave');
+  if (S.lib) { sv.title = 'Als PDF-Datei exportieren'; const l = sv.querySelector('.lbl'); if (l) l.textContent = 'Exportieren'; }
+}
+if (window.wbDesktop) document.documentElement.classList.add('desktop', window.wbDesktop.platform === 'darwin' ? 'mac' : 'win');
+
 /* ---------- Start ---------- */
 async function boot() {
   bindUI();
@@ -3800,6 +3944,12 @@ async function boot() {
       for (const n of ENG.STD_FONTS) fonts.set(n, await d.embedFont(PL.StandardFonts[n.replace('Times-Roman', 'TimesRoman').replace(/^Times-/, 'TimesRoman').replace(/-/g, '')]));
       ENG.setStdWidths((name, ch) => { const f = fonts.get(name); if (!f) return null; try { return f.widthOfTextAtSize(ch, 1000); } catch (e) { return null; } });
     } catch (e) { console.warn('Standardschriften nicht geladen', e); }
+  }
+  libUI();
+  if (LIB && window.WBSync) window.WBSync.init();
+  const qp = new URLSearchParams(location.search);
+  if (LIB && qp.get('doc')) {
+    if (await openLibDoc(qp.get('doc'))) { if (qp.get('export') === '1') { history.replaceState(null, '', 'index.html?doc=' + encodeURIComponent(qp.get('doc'))); savePdf(); } return; }
   }
   if (await restoreSession()) return;
   busy(true, 'Beispiel wird geladen …');
