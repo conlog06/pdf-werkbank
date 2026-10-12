@@ -30,6 +30,21 @@ Unter **`library.html`** (Knopf ganz links im Editor) liegt die Bibliothek, aufg
 
 Abgeglichen werden Ordner (Name, Farbe, Symbol), Dokumente samt Bearbeitungsstand, Favoriten, Papierkorb und „Zuletzt geöffnet“. Änderungen anderer Geräte kommen live an. Offline geht alles weiter und wird beim nächsten Online-Sein nachgeholt. Wurde dasselbe Dokument auf zwei Geräten gleichzeitig geändert, bleibt die eigene Fassung als „Konflikt“-Kopie erhalten.
 
+## Google Drive (automatisches Backup)
+
+Wie bei GoodNotes: Jedes Dokument der Bibliothek liegt automatisch als PDF mit allen Markierungen in Google Drive, unter **Meine Ablage › PDF Werkbank** in derselben Ordnerstruktur. Nach jeder Änderung wird die PDF aktualisiert, Umbenennen und Verschieben ziehen mit, Gelöschtes wandert in den Drive-Papierkorb. Die Werkbank sieht nur Dateien, die sie selbst angelegt hat (Bereich `drive.file`).
+
+- **Desktop-App:** einmal im Browser anmelden, danach läuft das Backup dauerhaft im Hintergrund.
+- **Webseite:** Google erlaubt im Browser nur Anmeldungen für eine Stunde. Danach zeigt die Bibliothek „Anmeldung abgelaufen“, ein Tipp darauf setzt das Backup fort.
+
+**Einrichten (einmalig, kostenlos):**
+1. [Google Cloud Console](https://console.cloud.google.com/) → neues Projekt „PDF Werkbank“.
+2. *APIs & Dienste → Bibliothek* → **Google Drive API** aktivieren.
+3. *Google Auth Platform* (OAuth-Zustimmungsbildschirm): App-Name und E-Mail eintragen, Zielgruppe **Extern**. Unter *Datenzugriff* den Bereich `…/auth/drive.file` hinzufügen. Unter *Zielgruppe* auf **App veröffentlichen** (sonst läuft die Anmeldung der Desktop-App nach 7 Tagen ab; für `drive.file` ist keine Prüfung durch Google nötig).
+4. *Clients → Client erstellen* → Typ **Webanwendung**, unter *Autorisierte JavaScript-Quellen* `https://conlog06.github.io` eintragen. Die Client-ID kommt in [`js/config.js`](js/config.js) als `googleClientId`.
+5. Noch einen Client → Typ **Desktop-App**. Die Client-ID kommt in `js/config.js` als `googleDesktopClientId`. Den **Clientschlüssel** im Repo *pdf-werkbank-app* unter *Settings → Secrets and variables → Actions* als `GOOGLE_DESKTOP_SECRET` speichern (nicht ins Repo schreiben).
+6. In der Bibliothek unten links auf **Google Drive** tippen und verbinden.
+
 ## iPad und Apple Pencil
 
 - **Pencil-Erkennung:** Sobald der Pencil das erste Mal die Seite berührt, schaltet die Werkbank auf **„Nur Pencil zeichnet“**. Dann zeichnet nur der Pencil, Finger scrollen und zoomen, und der aufgelegte Handballen hinterlässt keine Striche. Der Schalter „Nur Pencil“ in der Eigenschaftsleiste (oder im **⋯**-Menü) stellt um, die Einstellung bleibt gespeichert.
@@ -147,6 +162,7 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/calc.js` | Rechner: Formel-Parser, Gleichungslöser, Graphen und Handschrifterkennung |
 | `library.html`, `js/library.js` | Bibliothek: Ordner, Cover, Notizbücher, Papierkorb, Drag & Drop |
 | `js/store.js` | Lokale Bibliothek in IndexedDB (Ordner, Dokumente, Bearbeitungsstände) |
+| `js/gdrive.js` | Automatisches Backup aller Dokumente als PDF in Google Drive |
 | `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
 | `js/content-engine.js` | Liest den Inhaltsstrom einer PDF-Seite, ermittelt jedes gezeichnete Objekt mit Position und schreibt den Strom mit gelöschten, geänderten, verschobenen oder geschwärzten Objekten neu |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installierbare App und Offline-Betrieb |
