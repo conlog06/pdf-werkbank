@@ -9,6 +9,16 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
+## Neu in dieser Version
+
+- **Volltextsuche:** Das Suchfeld der Bibliothek durchsucht auch den Text aller PDFs (inkl. eigener Texte, Notizen und Kommentare) und zeigt Ausschnitte mit Seitenzahl. Ein Tipp öffnet das Dokument genau auf der Seite, der Treffer ist markiert.
+- **Befehlspalette:** `Strg+K` bzw. `⌘K` öffnet eine Suche über alle Werkzeuge, Aktionen, Ordner, Dokumente und Seiten („Seite 12“, „Präsentieren“, „Neues Notizbuch“ …).
+- **Laserpointer (J):** leuchtende Spur, die von selbst verblasst. Mit dem Lesemodus (F) die perfekte Präsentation, auch mit Pencil.
+- **Notizbuch-Vorlagen:** Cornell-Notizen, To-do-Liste, Wochenplaner, Millimeterpapier und Notenlinien, zusätzlich zu blanko, liniert, kariert und punktiert.
+- **Link teilen:** Im Menü eines Dokuments „Link teilen …“ erzeugt einen 7 Tage gültigen Download-Link der PDF mit allen Markierungen (Sync-Anmeldung nötig).
+- **Automatische Updates:** Webseite und Home-Bildschirm-App melden neue Versionen und aktualisieren mit einem Tipp. Die Desktop-App lädt Updates selbst und bietet „Jetzt neu starten“ an (Windows und macOS).
+- **Für alle Systeme:** Auf Android lassen sich PDFs aus jeder App per „Teilen → PDF Werkbank“ in die Bibliothek schicken. Am PC öffnet die installierte Web-App PDFs per „Öffnen mit“. Am App-Symbol gibt es Schnellstart-Einträge (Neues Notizbuch, PDF importieren). Geschützte PDFs (Vorlesungsfolien) lassen sich bearbeiten und exportieren.
+
 ## Bibliothek und Sync
 
 Unter **`library.html`** (Knopf ganz links im Editor) liegt die Bibliothek, aufgebaut wie bei GoodNotes:
@@ -145,6 +155,7 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `W` | Abdecken | `R` / `O` | Rechteck / Ellipse |
 | `B` | Schwärzen | `L` / `A` | Linie / Pfeil |
 | `Q` | Messen | `K` / `X` | Haken / Kreuz |
+| `J` | Laserpointer | `Strg+K` | Befehlspalette |
 | `S` | Stempel | `I` / `U` | Bild / Unterschrift |
 | `C` | Notiz | `F` | Lesemodus |
 | `Entf` | Löschen | `Strg+Z` / `Strg+Y` | Rückgängig / Wiederholen |
@@ -162,6 +173,10 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/calc.js` | Rechner: Formel-Parser, Gleichungslöser, Graphen und Handschrifterkennung |
 | `library.html`, `js/library.js` | Bibliothek: Ordner, Cover, Notizbücher, Papierkorb, Drag & Drop |
 | `js/store.js` | Lokale Bibliothek in IndexedDB (Ordner, Dokumente, Bearbeitungsstände) |
+| `js/search.js` | Volltextindex aller Dokumente (lokal) |
+| `js/palette.js` | Befehlspalette Strg+K |
+| `js/update.js` | Hinweis auf neue Versionen, Aktualisieren mit einem Tipp |
+| `js/decrypt.js` | Entschlüsseln geschützter PDFs |
 | `js/gdrive.js` | Automatisches Backup aller Dokumente als PDF in Google Drive |
 | `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
 | `js/content-engine.js` | Liest den Inhaltsstrom einer PDF-Seite, ermittelt jedes gezeichnete Objekt mit Position und schreibt den Strom mit gelöschten, geänderten, verschobenen oder geschwärzten Objekten neu |

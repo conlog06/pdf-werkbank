@@ -24,6 +24,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # Version für die Update-Anzeige stempeln
+      - name: Version eintragen
+        run: |
+          V="${GITHUB_SHA::7}"
+          sed -i "s/__WB_BUILD__/$V/" js/update.js
+          echo "{\"version\":\"$V\",\"built\":\"$(date -u +%FT%TZ)\"}" > version.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
