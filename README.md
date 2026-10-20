@@ -9,15 +9,25 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
-## Neu in dieser Version
+## Neu in dieser Version (1.3)
 
-- **Volltextsuche:** Das Suchfeld der Bibliothek durchsucht auch den Text aller PDFs (inkl. eigener Texte, Notizen und Kommentare) und zeigt Ausschnitte mit Seitenzahl. Ein Tipp öffnet das Dokument genau auf der Seite, der Treffer ist markiert.
-- **Befehlspalette:** `Strg+K` bzw. `⌘K` öffnet eine Suche über alle Werkzeuge, Aktionen, Ordner, Dokumente und Seiten („Seite 12“, „Präsentieren“, „Neues Notizbuch“ …).
-- **Laserpointer (J):** leuchtende Spur, die von selbst verblasst. Mit dem Lesemodus (F) die perfekte Präsentation, auch mit Pencil.
-- **Notizbuch-Vorlagen:** Cornell-Notizen, To-do-Liste, Wochenplaner, Millimeterpapier und Notenlinien, zusätzlich zu blanko, liniert, kariert und punktiert.
-- **Link teilen:** Im Menü eines Dokuments „Link teilen …“ erzeugt einen 7 Tage gültigen Download-Link der PDF mit allen Markierungen (Sync-Anmeldung nötig).
-- **Automatische Updates:** Webseite und Home-Bildschirm-App melden neue Versionen und aktualisieren mit einem Tipp. Die Desktop-App lädt Updates selbst und bietet „Jetzt neu starten“ an (Windows und macOS).
-- **Für alle Systeme:** Auf Android lassen sich PDFs aus jeder App per „Teilen → PDF Werkbank“ in die Bibliothek schicken. Am PC öffnet die installierte Web-App PDFs per „Öffnen mit“. Am App-Symbol gibt es Schnellstart-Einträge (Neues Notizbuch, PDF importieren). Geschützte PDFs (Vorlesungsfolien) lassen sich bearbeiten und exportieren.
+- **Flüssiges Zoomen auf Tablets:** Pinch-Zoom läuft jetzt über die Grafikkarte und folgt den Fingern ohne Ruckeln, erst am Ende wird scharf neu gerendert. **Doppeltipp** wechselt zwischen Seitenbreite und Vergrößerung. Beim Drehen des iPads bleibt „Seitenbreite“ erhalten, Zoom bis 600 %. Am Mac funktioniert der Trackpad-Pinch auch in Safari.
+- **Backup einstellbar:** Google Drive sichert wahlweise *nach jeder Änderung*, *höchstens stündlich*, *beim Schließen eines Dokuments*, *einmal am Tag* oder *nur manuell*. Einzelne Ordner lassen sich ausnehmen, auf dem Handy auf Wunsch nur im WLAN.
+- **Sync einstellbar:** sofort (live), alle 5, 15 oder 60 Minuten oder nur über „Jetzt synchronisieren“.
+- **16 Schriftarten:** neben Helvetica, Times und Courier jetzt Roboto, Open Sans, Inter, Montserrat, Nunito, Merriweather, Lora, Playfair Display, JetBrains Mono und die Handschriften Caveat, Dancing Script, Patrick Hand und Permanent Marker. Sie werden beim Speichern als Teilmenge in die PDF eingebettet und sehen überall gleich aus.
+- **Werkzeugleiste anpassen:** Werkzeuge ein- und ausblenden, Reihenfolge ändern, Trennlinien setzen, fertige Vorlagen („Schreiben und Lernen“, „PDF bearbeiten“, „Formulare und Verträge“). Das **⋯**-Menü ist jetzt nach Datei, Ansicht, Seite und Export gegliedert.
+- **Stift-Favoriten:** Stiftart, Farbe, Stärke und Deckkraft mit einem Tipp; eigene Favoriten mit „+“, entfernen durch Gedrückthalten.
+- **Formen:** Rechteck und Ellipse hell oder voll gefüllt, Linien, Pfeile und Formen gestrichelt oder gepunktet.
+- **Textausrichtung:** links, zentriert oder rechtsbündig.
+- **Weiterlesen:** Jedes Dokument öffnet auf der zuletzt gelesenen Seite, das Cover zeigt den Lesefortschritt.
+- **Mit Passwort speichern:** PDF mit AES-256 verschlüsseln, Drucken, Kopieren und Bearbeiten einzeln erlauben.
+- **Fotos und Scans:** Bilder oder Kamera direkt als Seiten einfügen bzw. als neues Dokument anlegen, auf Wunsch mit Scan-Aufbereitung (Papier weiß, Schrift kräftig).
+- **ZIP-Export:** mehrere Dokumente oder ganze Ordner (mit Unterordnern) als ZIP herunterladen.
+- **Seiten aus der Bibliothek einfügen:** Seiten aus einem anderen Dokument übernehmen, z. B. „1-3, 5“.
+- **Tastenkürzel-Übersicht:** `?` zeigt alle Kürzel und Touch-Gesten.
+- **Cover-Größe:** Regler über den Dokumenten, Pinch oder `Strg` + Mausrad.
+
+Seit 1.2: Volltextsuche über alle PDFs, Befehlspalette (`Strg+K`/`⌘K`), Laserpointer (J), Notizbuch-Vorlagen (Cornell, To-do, Woche, Millimeter, Noten), Link teilen, automatische Updates, „Teilen → PDF Werkbank“ auf Android, geschützte Vorlesungsfolien bearbeiten.
 
 ## Bibliothek und Sync
 
@@ -42,7 +52,7 @@ Abgeglichen werden Ordner (Name, Farbe, Symbol), Dokumente samt Bearbeitungsstan
 
 ## Google Drive (automatisches Backup)
 
-Wie bei GoodNotes: Jedes Dokument der Bibliothek liegt automatisch als PDF mit allen Markierungen in Google Drive, unter **Meine Ablage › PDF Werkbank** in derselben Ordnerstruktur. Nach jeder Änderung wird die PDF aktualisiert, Umbenennen und Verschieben ziehen mit, Gelöschtes wandert in den Drive-Papierkorb. Die Werkbank sieht nur Dateien, die sie selbst angelegt hat (Bereich `drive.file`).
+Wie bei GoodNotes: Jedes Dokument der Bibliothek liegt automatisch als PDF mit allen Markierungen in Google Drive, unter **Meine Ablage › PDF Werkbank** in derselben Ordnerstruktur. Je nach Einstellung (im Drive-Dialog unter *Automatisch sichern*) wird die PDF nach jeder Änderung, stündlich, beim Schließen, täglich oder nur manuell aktualisiert, Umbenennen und Verschieben ziehen mit, Gelöschtes wandert in den Drive-Papierkorb. Die Werkbank sieht nur Dateien, die sie selbst angelegt hat (Bereich `drive.file`).
 
 - **Desktop-App:** einmal im Browser anmelden, danach läuft das Backup dauerhaft im Hintergrund.
 - **Webseite:** Google erlaubt im Browser nur Anmeldungen für eine Stunde. Danach zeigt die Bibliothek „Anmeldung abgelaufen“, ein Tipp darauf setzt das Backup fort.
@@ -60,7 +70,7 @@ Wie bei GoodNotes: Jedes Dokument der Bibliothek liegt automatisch als PDF mit a
 - **Pencil-Erkennung:** Sobald der Pencil das erste Mal die Seite berührt, schaltet die Werkbank auf **„Nur Pencil zeichnet“**. Dann zeichnet nur der Pencil, Finger scrollen und zoomen, und der aufgelegte Handballen hinterlässt keine Striche. Der Schalter „Nur Pencil“ in der Eigenschaftsleiste (oder im **⋯**-Menü) stellt um, die Einstellung bleibt gespeichert.
 - **Druckstärke:** Der Füller wird dicker, je fester du drückst. Alle Zwischenpunkte des Pencil (bis 240 Hz) fließen ein, die Linien bleiben dadurch glatt.
 - **Hover-Vorschau:** Auf iPads mit Hover-Unterstützung zeigt ein Kreis vor dem Aufsetzen, wo und wie breit Stift oder Radierer treffen.
-- **Gesten:** zwei Finger tippen = rückgängig, drei Finger tippen = wiederholen, zwei Finger ziehen = zoomen und verschieben.
+- **Gesten:** zwei Finger tippen = rückgängig, drei Finger tippen = wiederholen, zwei Finger ziehen = zoomen und verschieben, Doppeltipp = Seitenbreite / Vergrößern.
 - **Layout:** Im Hoch- und Querformat bleiben die Werkzeuge erreichbar. Seitenfunktionen wandern ins **⋯**-Menü.
 - **Teilen:** Im **⋯**-Menü sendet „Teilen …“ die fertige PDF an *Dateien*, Mail, AirDrop oder andere Apps.
 
@@ -162,7 +172,7 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `Strg+S` | Speichern | `Strg+F` | Suchen |
 | `Strg+C` / `Strg+V` | Kopieren / Einfügen | `Strg+D` | Duplizieren |
 | `Strg+X` | Ausschneiden | `Strg+A` | Alles auswählen |
-| `Z` | Rechner und Graphen | | |
+| `Z` | Rechner und Graphen | `?` | Alle Kürzel und Gesten |
 
 ## Aufbau
 
@@ -176,7 +186,9 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/search.js` | Volltextindex aller Dokumente (lokal) |
 | `js/palette.js` | Befehlspalette Strg+K |
 | `js/update.js` | Hinweis auf neue Versionen, Aktualisieren mit einem Tipp |
-| `js/decrypt.js` | Entschlüsseln geschützter PDFs |
+| `js/decrypt.js` | Entschlüsseln geschützter PDFs, Passwortschutz beim Export |
+| `js/photos.js` | Fotos und Scans als PDF-Seiten |
+| `fonts/` | Mitgelieferte Schriften (Google Fonts, SIL Open Font License bzw. Apache 2.0), eingebettet mit [fontkit](https://github.com/Hopding/fontkit) |
 | `js/gdrive.js` | Automatisches Backup aller Dokumente als PDF in Google Drive |
 | `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
 | `js/content-engine.js` | Liest den Inhaltsstrom einer PDF-Seite, ermittelt jedes gezeichnete Objekt mit Position und schreibt den Strom mit gelöschten, geänderten, verschobenen oder geschwärzten Objekten neu |
