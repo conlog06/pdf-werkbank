@@ -9,7 +9,21 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
-## Neu in dieser Version (1.3)
+## Neu in Version 1.4
+
+- **KI-Assistent im Editor** (Knopf ✦ oben oder Taste `Y`): Dokument oder Seite zusammenfassen, einfach erklären, Lernkarten und Quiz erstellen, Aufgaben und Termine finden, übersetzen, Handschrift in Text umwandeln, freie Fragen mit Seitenangaben (antippen springt zur Seite). Antworten lassen sich kopieren oder als Notiz, Text oder neue Seite einfügen.
+  - **Mit ChatGPT anmelden** (nur Desktop-App): nutzt dein Plus- oder Pro-Abo über OpenAIs „Sign in with ChatGPT“ für Open-Source- und lokale Apps. Das Limit je App stellst du in den ChatGPT-Einstellungen ein.
+  - **Eigener API-Schlüssel** (Webseite und App): OpenAI oder Claude, Bezahlung pro Nutzung. Der Schlüssel bleibt auf dem Gerät (Desktop: verschlüsselt im System-Schlüsselbund).
+  - Ein **Claude-Abo** (Pro/Max) lässt sich nicht anbinden: Anthropic erlaubt die Abo-Anmeldung seit Februar 2026 nur in den eigenen Apps. Für Claude bleibt der API-Schlüssel.
+  - Gesendet werden nur der Text des Dokuments bzw. der Seite und, wo nötig (Handschrift, Scans), ein Bild der Seite.
+- **Schnellleiste an markiertem Text:** Farbe wechseln, Kommentar, kopieren, mit KI erklären oder übersetzen. An eigenen Textfeldern: Rechtschreibung mit KI korrigieren.
+- **Aufgeräumte Werkzeugleiste:** Ähnliche Werkzeuge sind gruppiert (PDF bearbeiten, Markieren, Formen, Stempel, Bild/Unterschrift). Ecke antippen, lange drücken oder Rechtsklick öffnet die Gruppe. Abschaltbar unter *Einstellungen → Ansicht*.
+- **Schlanke Kopfzeile** für Dokumente aus der Bibliothek (Name und Sicherungsstatus vorn, Öffnen/Anhängen im ⋯-Menü).
+- **Einstellungen an einem Ort:** In der Bibliothek unten links (Darstellung, KI, Sync und Backup, App), im Editor unter ⋯ → *Einstellungen* (Dokument, Kommentare, Messen, Ansicht, KI).
+- **Hell- und Dunkelmodus** wählbar (oder wie das System).
+- **Weiterlesen:** Die zuletzt geöffneten Dokumente stehen oben in der Bibliothek, mit Lesefortschritt.
+
+## Neu in Version 1.3
 
 - **Flüssiges Zoomen auf Tablets:** Pinch-Zoom läuft jetzt über die Grafikkarte und folgt den Fingern ohne Ruckeln, erst am Ende wird scharf neu gerendert. **Doppeltipp** wechselt zwischen Seitenbreite und Vergrößerung. Beim Drehen des iPads bleibt „Seitenbreite“ erhalten, Zoom bis 600 %. Am Mac funktioniert der Trackpad-Pinch auch in Safari.
 - **Backup einstellbar:** Google Drive sichert wahlweise *nach jeder Änderung*, *höchstens stündlich*, *beim Schließen eines Dokuments*, *einmal am Tag* oder *nur manuell*. Einzelne Ordner lassen sich ausnehmen, auf dem Handy auf Wunsch nur im WLAN.
@@ -166,6 +180,7 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `B` | Schwärzen | `L` / `A` | Linie / Pfeil |
 | `Q` | Messen | `K` / `X` | Haken / Kreuz |
 | `J` | Laserpointer | `Strg+K` | Befehlspalette |
+| `Y` | KI-Assistent | | |
 | `S` | Stempel | `I` / `U` | Bild / Unterschrift |
 | `C` | Notiz | `F` | Lesemodus |
 | `Entf` | Löschen | `Strg+Z` / `Strg+Y` | Rückgängig / Wiederholen |
@@ -188,6 +203,7 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/update.js` | Hinweis auf neue Versionen, Aktualisieren mit einem Tipp |
 | `js/decrypt.js` | Entschlüsseln geschützter PDFs, Passwortschutz beim Export |
 | `js/photos.js` | Fotos und Scans als PDF-Seiten |
+| `js/ai.js` | KI-Anbindung: ChatGPT-Abo (Desktop), OpenAI- und Claude-API, Streaming, Einrichtung |
 | `fonts/` | Mitgelieferte Schriften (Google Fonts, SIL Open Font License bzw. Apache 2.0), eingebettet mit [fontkit](https://github.com/Hopding/fontkit) |
 | `js/gdrive.js` | Automatisches Backup aller Dokumente als PDF in Google Drive |
 | `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
