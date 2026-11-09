@@ -9,6 +9,18 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
+## Neu in Version 1.6
+
+- **Gemeinsam bearbeiten per Link:** In der Bibliothek (⋯ am Dokument) oder im Editor (⋯ › *Gemeinsam bearbeiten*) einen Link erstellen und per Nachricht, Mail oder QR-Code verschicken. Wer ihn öffnet, arbeitet im Browser mit – ohne Konto, ohne App. Änderungen aller erscheinen in Sekunden, gleichzeitige Änderungen an verschiedenen Stellen bleiben beide erhalten, Avatare zeigen, wer gerade da ist und auf welcher Seite. Wahlweise „nur ansehen“. Der Link lässt sich jederzeit beenden. Einrichtung: einmal [`supabase/share.sql`](supabase/share.sql) ausführen (siehe unten).
+- **Eigenes Dateiformat `.werkbank`:** ⋯ › *Als Werkbank-Datei speichern*. Enthält Original-PDFs und den kompletten Bearbeitungsstand (Ebenen, Live-Graphen, Tabellen, Lesezeichen, Formulare) – der Empfänger kann alles weiter bearbeiten, statt nur eine flache PDF zu bekommen. Öffnen per Doppelklick (Desktop-App), über *Öffnen* oder durch Ziehen in die Bibliothek.
+- **Live-Graphen im Dokument:** Im Rechner *Live-Graph einfügen*. Der Graph bleibt bearbeitbar (Doppelklick): Formeln, Regler für Parameter (`a = 2`), Ausschnitt, Grad/Bogenmaß. Beim Export wird er scharf eingebettet.
+- **Rechner mit Statistik und Verteilungen:** `median`, `var`, `sd`, `binompdf/binomcdf`, `poissonpdf`, `normpdf/normcdf/invnorm`, `erf`, `clamp`, `lerp`, `frac` u. a.; Dezimalkomma wird erkannt (`round(2,345; 2)`).
+- **Tabellen:** ⋯ › *Tabelle einfügen*. Zellen mit `|` trennen oder direkt aus Excel/Numbers einfügen, Kopfzeile, Zebra-Streifen, Zahlen rechtsbündig. Im Export echter, durchsuchbarer Text.
+- **Präsentieren:** Vollbild, eine Seite pro Bildschirm, ← → / Leertaste / Klick blättern, `L` Laserpointer, `B` schwarz, `W` weiß, `Esc` beenden.
+- **Vorlesen** ab der aktuellen Seite mit den Stimmen des Systems (Tempo umschaltbar), **Diktieren** in ein Textfeld (Browser; in der Desktop-App die Diktierfunktion des Systems).
+- **QR-Code einfügen** (z. B. Link zum gemeinsamen Dokument), **Versionsverlauf** für Bibliotheksdokumente (automatische Zwischenstände, mit einem Klick zurück), **Sepia-Lesefarbe**, **Dokument-Statistik** (Wörter, Lesezeit, Elemente) und **Markierungen und Kommentare als Text** mit Seitenzahlen.
+- **Stabilität:** Doppelklick auf ausgewählte Graphen/Tabellen funktioniert zuverlässig; Sync lädt den Bearbeitungsstand mit Wiederholung, statt ihn bei einem kurzen Netzfehler zu verwerfen; gleichzeitige Änderungen beim gemeinsamen Bearbeiten werden gegen den neuesten lokalen Stand zusammengeführt.
+
 ## Neu in Version 1.5
 
 - **Standard-PDF-Programm (Desktop-App):** PDF Werkbank meldet sich bei Windows und macOS als PDF-Programm an. In der Bibliothek (Einstellungen › App oder Hinweis beim Start) bzw. am Mac unter *Hilfe › Als Standard-PDF-Programm festlegen*. Windows 10/11 lässt Apps den Standard nicht selbst setzen: Die App öffnet dafür die passende Einstellungsseite, dort PDF Werkbank wählen.
@@ -72,6 +84,10 @@ Unter **`library.html`** (Knopf ganz links im Editor) liegt die Bibliothek, aufg
 5. In der Bibliothek unten links **Konto erstellen** bzw. **Anmelden**. Auf jedem weiteren Gerät mit demselben Konto anmelden.
 
 Abgeglichen werden Ordner (Name, Farbe, Symbol), Dokumente samt Bearbeitungsstand, Favoriten, Papierkorb und „Zuletzt geöffnet“. Änderungen anderer Geräte kommen live an. Offline geht alles weiter und wird beim nächsten Online-Sein nachgeholt. Wurde dasselbe Dokument auf zwei Geräten gleichzeitig geändert, bleibt die eigene Fassung als „Konflikt“-Kopie erhalten.
+
+### Gemeinsam bearbeiten einrichten
+
+Einmal im Supabase-Dashboard unter **SQL Editor** den Inhalt von [`supabase/share.sql`](supabase/share.sql) ausführen (kann gefahrlos mehrfach laufen). Das legt die Tabelle `wb_shares`, die Funktionen für den Zugriff per Link und den öffentlichen Speicher `werkbank-share` an. Wer einen Link erstellt, muss in der Bibliothek angemeldet sein; Gäste brauchen kein Konto. Gelesen und geschrieben wird nur über den geheimen Link-Token (18 Zeichen), beim Beenden wird der Link ungültig und die hochgeladenen PDFs werden gelöscht.
 
 ## Google Drive (automatisches Backup)
 
@@ -213,6 +229,8 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/decrypt.js` | Entschlüsseln geschützter PDFs, Passwortschutz beim Export |
 | `js/photos.js` | Fotos und Scans als PDF-Seiten |
 | `js/diag.js` | Fehlerprotokoll und Speicherprüfung |
+| `js/wbfile.js` | Werkbank-Dateiformat (ZIP mit Original-PDFs und Bearbeitungsstand) |
+| `js/share.js`, `supabase/share.sql` | Gemeinsam bearbeiten per Link: Freigaben, Zusammenführen, Echtzeit, QR-Code ([qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator), MIT) |
 | `js/ai.js` | KI-Anbindung: ChatGPT-Abo (Desktop), OpenAI- und Claude-API, Streaming, Einrichtung |
 | `fonts/` | Mitgelieferte Schriften (Google Fonts, SIL Open Font License bzw. Apache 2.0), eingebettet mit [fontkit](https://github.com/Hopding/fontkit) |
 | `js/gdrive.js` | Automatisches Backup aller Dokumente als PDF in Google Drive |
