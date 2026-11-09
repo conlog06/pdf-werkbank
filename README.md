@@ -9,6 +9,15 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
+## Neu in Version 1.5
+
+- **Standard-PDF-Programm (Desktop-App):** PDF Werkbank meldet sich bei Windows und macOS als PDF-Programm an. In der Bibliothek (Einstellungen › App oder Hinweis beim Start) bzw. am Mac unter *Hilfe › Als Standard-PDF-Programm festlegen*. Windows 10/11 lässt Apps den Standard nicht selbst setzen: Die App öffnet dafür die passende Einstellungsseite, dort PDF Werkbank wählen.
+- **Dateien direkt bearbeiten wie in Acrobat:** Doppelklick auf eine PDF öffnet sie in einem eigenen Fenster, `Strg/⌘+S` speichert in dieselbe Datei, *Speichern unter …* im ⋯-Menü. Mehrere PDFs gleichzeitig in eigenen Fenstern. Wer lieber importiert: Einstellungen › App › „Doppelklick auf eine PDF“.
+- **Sicher speichern:** Erst in eine Zwischendatei schreiben, dann austauschen (keine halb geschriebenen PDFs), vor dem ersten Überschreiben eine Sicherheitskopie des Originals (die letzten 30), Nachfrage beim Schließen mit ungespeicherten Änderungen, Wiederherstellen nach einem Absturz.
+- **Stabilität:** abgestürzte oder hängende Ansichten werden wiederbelebt, Fehler landen in einem Protokoll (Einstellungen › App › Fehlerprotokoll kopieren), Warnung bei knappem Speicher.
+- **Schneller bei großen PDFs:** Seiten werden parallel geladen, gerendert wird nach Nähe zum Sichtbereich mit begrenzter Parallelität, nicht mehr sichtbare Seiten geben ihren Grafikspeicher sofort frei (wichtig fürs iPad).
+- **Zuletzt geöffnet** im Dock (Mac) und in der Sprungliste der Taskleiste (Windows).
+
 ## Neu in Version 1.4
 
 - **KI-Assistent im Editor** (Knopf ✦ oben oder Taste `Y`): Dokument oder Seite zusammenfassen, einfach erklären, Lernkarten und Quiz erstellen, Aufgaben und Termine finden, übersetzen, Handschrift in Text umwandeln, freie Fragen mit Seitenangaben (antippen springt zur Seite). Antworten lassen sich kopieren oder als Notiz, Text oder neue Seite einfügen.
@@ -203,6 +212,7 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/update.js` | Hinweis auf neue Versionen, Aktualisieren mit einem Tipp |
 | `js/decrypt.js` | Entschlüsseln geschützter PDFs, Passwortschutz beim Export |
 | `js/photos.js` | Fotos und Scans als PDF-Seiten |
+| `js/diag.js` | Fehlerprotokoll und Speicherprüfung |
 | `js/ai.js` | KI-Anbindung: ChatGPT-Abo (Desktop), OpenAI- und Claude-API, Streaming, Einrichtung |
 | `fonts/` | Mitgelieferte Schriften (Google Fonts, SIL Open Font License bzw. Apache 2.0), eingebettet mit [fontkit](https://github.com/Hopding/fontkit) |
 | `js/gdrive.js` | Automatisches Backup aller Dokumente als PDF in Google Drive |
