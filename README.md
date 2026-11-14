@@ -9,6 +9,20 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
+## Neu in Version 1.7
+
+- **Cloud-Dienste:** Neben Google Drive jetzt auch **Microsoft OneDrive** (privat und Microsoft 365), **Dropbox**, **iCloud Drive**, **WebDAV** (Nextcloud, ownCloud, MagentaCLOUD, GMX, WEB.DE, pCloud, Strato HiDrive, NAS) und **jeder Ordner** (z. B. ein synchronisierter Cloud-Ordner oder USB-Stick). Jeder Dienst sichert die Bibliothek automatisch als PDFs in „PDF Werkbank“, mehrere gleichzeitig. Alles unter *Cloud-Dienste* unten links in der Bibliothek.
+- **Aus der Cloud öffnen und dorthin speichern:** Datei-Browser für alle verbundenen Dienste, im Editor (⋯ › Datei) und in der Bibliothek (Neu › *Aus der Cloud importieren*, Auswahl › Wolke).
+- **Anmelden mit Apple, Microsoft oder Google** für den Sync (siehe unten).
+- **Texterkennung (OCR):** Scans und Fotos werden durchsuchbar, markierbar und vorlesbar. Läuft lokal mit [Tesseract](https://github.com/naptha/tesseract.js), in der Desktop-App auch offline.
+- **Formulare erstellen:** Textfelder, mehrzeilige Felder, Kontrollkästchen, Auswahllisten, Datum und Unterschriftsfelder als echte PDF-Formularfelder. *Formular erkennen* macht aus Linien (`_____`) und Kästchen automatisch Felder.
+- **Suchen und schwärzen:** Begriffe, E-Mail-Adressen, Telefonnummern, IBANs, Geldbeträge und Daten im ganzen Dokument finden und auf einmal endgültig schwärzen.
+- **Vergleichen:** Zwei Fassungen nebeneinander, Wort für Wort, Entferntes rot, Neues grün, Liste aller Änderungen. Mit dem Original, einer Datei, einem Bibliotheks- oder Cloud-Dokument.
+- **PDF verkleinern:** Fotos und Scans werden in drei Stufen verkleinert und neu komprimiert, Text und Markierungen bleiben.
+- **Seitenübersicht:** Alle Seiten im Raster, mehrere auswählen, per Ziehen (auch mit dem Finger) sortieren, drehen, duplizieren, löschen, extrahieren.
+- **Stapel-Werkzeuge in der Bibliothek:** Mehrere Dokumente auswählen → zusammenführen, vergleichen, verkleinern oder Texterkennung für alle.
+- **Aufgeräumt:** Das ⋯-Menü ist in Gruppen sortiert (Datei, Teilen, Einfügen, Seiten, Werkzeuge, Ansicht), dazu die Übersicht **Alle Werkzeuge** mit Suche. Die Befehlspalette (Strg+K) findet jetzt auch alle Menüpunkte.
+
 ## Neu in Version 1.6
 
 - **Gemeinsam bearbeiten per Link:** In der Bibliothek (⋯ am Dokument) oder im Editor (⋯ › *Gemeinsam bearbeiten*) einen Link erstellen und per Nachricht, Mail oder QR-Code verschicken. Wer ihn öffnet, arbeitet im Browser mit – ohne Konto, ohne App. Änderungen aller erscheinen in Sekunden, gleichzeitige Änderungen an verschiedenen Stellen bleiben beide erhalten, Avatare zeigen, wer gerade da ist und auf welcher Seite. Wahlweise „nur ansehen“. Der Link lässt sich jederzeit beenden. Einrichtung: einmal [`supabase/share.sql`](supabase/share.sql) ausführen (siehe unten).
@@ -103,6 +117,28 @@ Wie bei GoodNotes: Jedes Dokument der Bibliothek liegt automatisch als PDF mit a
 4. *Clients → Client erstellen* → Typ **Webanwendung**, unter *Autorisierte JavaScript-Quellen* `https://conlog06.github.io` eintragen. Die Client-ID kommt in [`js/config.js`](js/config.js) als `googleClientId`.
 5. Noch einen Client → Typ **Desktop-App**. Die Client-ID kommt in `js/config.js` als `googleDesktopClientId`. Den **Clientschlüssel** im Repo *pdf-werkbank-app* unter *Settings → Secrets and variables → Actions* als `GOOGLE_DESKTOP_SECRET` speichern (nicht ins Repo schreiben).
 6. In der Bibliothek unten links auf **Google Drive** tippen und verbinden.
+
+## Cloud-Dienste einrichten
+
+**OneDrive** und **Dropbox** brauchen je eine kostenlose App-Registrierung (einmalig, ohne Geheimnis):
+
+*Microsoft OneDrive (und „Mit Microsoft anmelden“):*
+1. [Microsoft Entra / Azure-Portal](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) → **App-Registrierungen** → *Neue Registrierung*, Name „PDF Werkbank“, Kontotypen **„Konten in einem beliebigen Organisationsverzeichnis und persönliche Microsoft-Konten“**.
+2. *Authentifizierung* → Plattform **Single-Page-Anwendung** mit `https://conlog06.github.io/pdf-werkbank/library.html`, außerdem Plattform **Mobil- und Desktopanwendungen** mit `http://localhost`.
+3. *API-Berechtigungen* → Microsoft Graph, delegiert: `Files.ReadWrite`, `User.Read`, `offline_access`.
+4. Die **Anwendungs-ID (Client-ID)** in [`js/config.js`](js/config.js) als `onedriveClientId` eintragen.
+
+*Dropbox:*
+1. [Dropbox App Console](https://www.dropbox.com/developers/apps) → *Create app* → *Scoped access*, **Full Dropbox**, Name „PDF Werkbank“.
+2. *Permissions:* `files.content.write`, `files.content.read`, `account_info.read` → *Submit*.
+3. *Settings → Redirect URIs:* `https://conlog06.github.io/pdf-werkbank/library.html` und `http://localhost:53682/`. *Allow public clients (Implicit Grant & PKCE)* auf **Allow**.
+4. Den **App key** (nicht das Secret) in `js/config.js` als `dropboxAppKey` eintragen.
+
+**iCloud Drive:** Apple bietet keine Schnittstelle für fremde Apps. Die Desktop-App findet den iCloud-Drive-Ordner selbst (Mac; Windows mit „iCloud für Windows“), in Chrome und Edge wählt man ihn einmal aus. iCloud lädt die PDFs von dort hoch. Auf iPhone und iPad: ⋯ › *Teilen* › *In Dateien sichern*.
+
+**WebDAV / Nextcloud:** Nichts einzurichten, Adresse, Benutzer und (App-)Passwort im Dialog eintragen. Im Browser muss der Server Zugriffe von anderen Seiten (CORS) erlauben; die Desktop-App verbindet sich immer.
+
+**Anmelden mit Apple, Microsoft oder Google (Sync):** Im Supabase-Dashboard unter *Authentication → Sign In / Providers* den Anbieter einschalten (Microsoft = „Azure“, mit der Client-ID von oben plus einem Client-Geheimnis aus *Zertifikate & Geheimnisse*; Google mit einem Web-Client; Apple braucht ein Apple-Developer-Konto). Unter *URL Configuration → Redirect URLs* `https://conlog06.github.io/pdf-werkbank/library.html` und `http://localhost:53682/` erlauben. Dann in `js/config.js` z. B. `authProviders: ['apple', 'azure', 'google']`.
 
 ## iPad und Apple Pencil
 
@@ -234,6 +270,9 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/ai.js` | KI-Anbindung: ChatGPT-Abo (Desktop), OpenAI- und Claude-API, Streaming, Einrichtung |
 | `fonts/` | Mitgelieferte Schriften (Google Fonts, SIL Open Font License bzw. Apache 2.0), eingebettet mit [fontkit](https://github.com/Hopding/fontkit) |
 | `js/gdrive.js` | Automatisches Backup aller Dokumente als PDF in Google Drive |
+| `js/cloud.js` | OneDrive, Dropbox, WebDAV, iCloud Drive und Ordner: Anmeldung (OAuth mit PKCE), Backup, Datei-Browser |
+| `js/tools.js` | Texterkennung (Tesseract), PDF verkleinern, Zusammenführen |
+| `js/compare.js` | Zwei PDFs Wort für Wort vergleichen |
 | `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
 | `js/content-engine.js` | Liest den Inhaltsstrom einer PDF-Seite, ermittelt jedes gezeichnete Objekt mit Position und schreibt den Strom mit gelöschten, geänderten, verschobenen oder geschwärzten Objekten neu |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installierbare App und Offline-Betrieb |
