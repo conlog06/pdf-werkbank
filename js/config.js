@@ -19,6 +19,6 @@ window.WB_CONFIG = {
   googleClientId: '611827808910-o8l642cfn76ca8e3ft1te2jlrvs42c4a.apps.googleusercontent.com',
   googleDesktopClientId: '611827808910-9cd7cs9ikkf50kv6sil11aesdhath6lp.apps.googleusercontent.com',
   onedriveClientId: '',
-  dropboxAppKey: '',
+  dropboxAppKey: 'dnqq0h4i8kqxrk2',
   authProviders: [],
 };
