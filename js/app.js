@@ -5666,7 +5666,7 @@ async function cloudOpen() {
 }
 async function cloudSaveDoc() {
   if (!window.WBCloud) return;
-  if (!WBCloud.anyEnabled()) { if (LIB) { if (await ask('Noch kein Cloud-Dienst verbunden', 'OneDrive, Dropbox, iCloud Drive oder Nextcloud verbindest du in der Bibliothek unten links unter „Cloud-Dienste“.', 'Zur Bibliothek', 'Abbrechen', false)) goLibrary(); } else toast('Noch kein Cloud-Dienst verbunden.'); return; }
+  if (!WBCloud.anyEnabled()) { if (LIB) { if (await ask('Noch kein Cloud-Dienst verbunden', 'Dropbox, iCloud Drive oder Nextcloud verbindest du in der Bibliothek unten links unter „Cloud-Dienste“.', 'Zur Bibliothek', 'Abbrechen', false)) goLibrary(); } else toast('Noch kein Cloud-Dienst verbunden.'); return; }
   commitEdit();
   const r = await WBCloud.pick({ mode: 'save', name: baseName() + '.pdf', ext: '.pdf', make: () => buildPdf(S.pages) });
   if (r) toast(`In ${r.label} gespeichert: ${r.path.join(' › ')}`);
@@ -5678,7 +5678,7 @@ const HUB = [
   ['Einfügen', [['field', 'Formularfeld', 'Textfeld, Kästchen, Auswahl, Unterschrift', 'field'], ['detectfields', 'Formular erkennen', 'Linien und Kästchen werden zu Feldern', 'field'], ['table', 'Tabelle', 'Aus Excel einfügen oder eintippen', 'grid'], ['calc', 'Rechner und Live-Graphen', 'Formeln, Funktionen, Statistik', 'calc'], ['qr', 'QR-Code', 'Link oder Text als QR-Code', 'qr'], ['photos', 'Fotos oder Scans', 'Bilder als neue Seiten', 'image']]],
   ['Seiten', [['organize', 'Seitenübersicht', 'Alle Seiten sortieren, drehen, löschen', 'grid'], ['blank', 'Neue Seite / Notizpapier', 'Leer, liniert, kariert, punktiert', 'blank'], ['merge', 'PDF anhängen', 'Weitere PDF ans Ende', 'add'], ['extract', 'Seiten extrahieren', 'Auswahl als eigene PDF', 'extract']]],
   ['Werkzeuge', [['ocr', 'Texterkennung (OCR)', 'Scans durchsuchbar machen', 'scan'], ['compress', 'PDF verkleinern', 'Fotos und Scans komprimieren', 'compress'], ['compare', 'Vergleichen', 'Zwei Fassungen Wort für Wort', 'compare'], ['stats', 'Dokument-Statistik', 'Wörter, Lesezeit, Elemente', 'list'], ['dictate', 'Diktieren', 'Sprache in ein Textfeld', 'comment'], ['speak', 'Vorlesen', 'Ab dieser Seite vorlesen', 'book']]],
-  ['Speichern und teilen', [['cloudsave', 'In der Cloud speichern', 'OneDrive, Dropbox, iCloud, Nextcloud', 'cloud'], ['cloudopen', 'Aus der Cloud öffnen', 'PDF aus deinem Cloud-Speicher', 'cloud'], ['collab', 'Gemeinsam bearbeiten', 'Link für Live-Zusammenarbeit', 'users'], ['werkbank', 'Werkbank-Datei', 'Bearbeitbar weitergeben (.werkbank)', 'save'], ['secure', 'Mit Passwort', 'AES-256 verschlüsselt speichern', 'lock'], ['marks', 'Kommentare als Text', 'Alle Markierungen mit Seitenzahl', 'note']]],
+  ['Speichern und teilen', [['cloudsave', 'In der Cloud speichern', 'Dropbox, iCloud, Nextcloud, Ordner', 'cloud'], ['cloudopen', 'Aus der Cloud öffnen', 'PDF aus deinem Cloud-Speicher', 'cloud'], ['collab', 'Gemeinsam bearbeiten', 'Link für Live-Zusammenarbeit', 'users'], ['werkbank', 'Werkbank-Datei', 'Bearbeitbar weitergeben (.werkbank)', 'save'], ['secure', 'Mit Passwort', 'AES-256 verschlüsselt speichern', 'lock'], ['marks', 'Kommentare als Text', 'Alle Markierungen mit Seitenzahl', 'note']]],
 ];
 function toolsHub() {
   commitEdit(); closeMenu();

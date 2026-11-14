@@ -781,7 +781,7 @@
     GD.setOptions({ mode: sel.value, exclude: $$('[name=ex]:checked', d).map(x => x.value), noCellular: cell ? cell.checked : undefined });
   }
 
-  /* ---------- Cloud-Dienste: OneDrive, Dropbox, iCloud Drive, WebDAV, Ordner (cloud.js) und Google Drive ---------- */
+  /* ---------- Cloud-Dienste: Dropbox, iCloud Drive, WebDAV, Ordner (cloud.js) und Google Drive ---------- */
   const CL = window.WBCloud || null;
   const cloudIco = (id, col, sz = 22) => CL ? CL.icon(id, col).replace('width="20" height="20"', `width="${sz}" height="${sz}"`) : '';
   function cloudSummary() {
@@ -789,7 +789,7 @@
     let s = 'ok', sub = '';
     if (GD) { const I = GD.info(); if (I.enabled) { on.push('Google Drive'); if (I.status === 'auth') s = 'auth'; else if (I.status === 'error') s = 'error'; else if (I.status === 'running') s = s === 'ok' ? 'running' : s; } }
     if (CL) for (const I of CL.infoAll()) if (I.enabled) { on.push(I.short); if (I.status === 'auth' && s !== 'error') s = 'auth'; else if (I.status === 'error') s = 'error'; else if (I.status === 'running' && s === 'ok') s = 'running'; }
-    if (!on.length) return { s: 'off', title: 'Cloud-Dienste', sub: 'OneDrive, iCloud, Dropbox, Google Drive …' };
+    if (!on.length) return { s: 'off', title: 'Cloud-Dienste', sub: 'Dropbox, iCloud, Nextcloud, Google Drive …' };
     sub = s === 'auth' ? 'Anmeldung nötig · tippen' : s === 'error' ? 'Problem beim Sichern' : s === 'running' ? 'Sichert …' : on.join(', ');
     return { s: s === 'ok' ? 'ok' : s, title: on.length === 1 ? on[0] : 'Cloud-Dienste', sub };
   }
@@ -844,12 +844,12 @@
     if (!I.enabled && !I.configured) {
       html += head + (I.folder
         ? `<p class="note">Dieser Browser kann keine Ordner verbinden. Das geht in der <b>Desktop-App</b> sowie in <b>Chrome</b> und <b>Edge</b> am Computer. Auf iPhone und iPad sicherst du einzelne PDFs über ⋯ › <i>Teilen</i> › <i>In Dateien sichern</i> in iCloud Drive.</p>`
-        : `<p class="note">Für ${esc(I.label)} braucht die Werkbank eine eigene App-Registrierung (kostenlos, einmalig). Die Anleitung steht im README unter <b>Cloud-Dienste einrichten</b>; danach ${id === 'onedrive' ? '<code>onedriveClientId</code>' : '<code>dropboxAppKey</code>'} in <code>js/config.js</code> eintragen.</p>`)
+        : `<p class="note">Für ${esc(I.label)} braucht die Werkbank eine eigene App-Registrierung (kostenlos, einmalig). Die Anleitung steht im README unter <b>Cloud-Dienste einrichten</b>; danach <code>dropboxAppKey</code> in <code>js/config.js</code> eintragen.</p>`)
         + `<div class="acts"><button class="btn primary" data-x="0">OK</button></div>`;
     } else if (!I.enabled) {
       html += head;
-      if (P.oauth) html += `<p class="note">${id === 'onedrive' ? 'Funktioniert mit privatem Microsoft-Konto sowie Arbeits- oder Schulkonto (Microsoft 365).' : 'Funktioniert mit jedem Dropbox-Konto, auch kostenlos.'} Die Werkbank legt ihre Sicherungen im Ordner <b>„PDF Werkbank“</b> an und kann PDFs aus deiner ${esc(I.short)} öffnen.${I.desktop ? ' Die Anmeldung öffnet sich im Browser.' : ''}</p>
-        <p class="err" id="clErr"></p><div class="acts"><button class="btn" data-x="0">Abbrechen</button><button class="btn primary" data-x="go">${id === 'onedrive' ? 'Mit Microsoft anmelden' : 'Mit Dropbox verbinden'}</button></div>`;
+      if (P.oauth) html += `<p class="note">Funktioniert mit jedem Dropbox-Konto, auch kostenlos. Die Werkbank legt ihre Sicherungen im Ordner <b>„PDF Werkbank“</b> an und kann PDFs aus deiner ${esc(I.short)} öffnen.${I.desktop ? ' Die Anmeldung öffnet sich im Browser.' : ''}</p>
+        <p class="err" id="clErr"></p><div class="acts"><button class="btn" data-x="0">Abbrechen</button><button class="btn primary" data-x="go">Mit Dropbox verbinden</button></div>`;
       else if (id === 'webdav') {
         wide = true;
         html += `<p class="note">Für Nextcloud, ownCloud, MagentaCLOUD, GMX, WEB.DE, pCloud, Strato HiDrive oder ein NAS. Bei Nextcloud am besten ein <b>App-Passwort</b> verwenden (Einstellungen › Sicherheit).${I.desktop ? '' : ' Im Browser klappt das nur, wenn der Server CORS erlaubt; in der Desktop-App immer.'}</p>
