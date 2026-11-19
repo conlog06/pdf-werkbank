@@ -9,6 +9,19 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
+## Neu in Version 1.8
+
+- **Vorlesung aufnehmen:** Mikrofon im Kopfbereich. Jede Notiz und Markierung merkt sich die Stelle in der Aufnahme. Beim Abspielen springt ein Tipp auf die Notiz zur passenden Sekunde; noch nicht Geschriebenes wird ausgegraut. Aufnahmen landen in der Bibliothek, in .werkbank-Dateien und im Sync.
+- **Lernkarten und Quiz:** Aus Markierungen entstehen Lückentexte, ein Kommentar daran wird zur Frage. Mit eingerichteter KI auch Frage-Antwort-Karten. Wiederholung im passenden Abstand, fällige Karten zeigt die Bibliothek unter „Lernen und Aufgaben".
+- **Bibliothek durchsuchen aus dem Editor:** Strg+Umschalt+F sucht in allen Dokumenten und öffnet den Treffer.
+- **Zweites Dokument daneben:** Ein weiteres PDF aus der Bibliothek oder vom Gerät nebeneinander anzeigen.
+- **Handschrift in Text:** Freihand-Striche auswählen und in Text umwandeln (KI, sonst Texterkennung).
+- **Digitale Signatur:** Eigenes Zertifikat (.p12/.pfx) laden oder ein persönliches erzeugen, PDF signieren (PKCS#7, SHA-256) und vorhandene Signaturen prüfen.
+- **Umwandeln:** PDF in Word (.docx mit Überschriften, Tabellen, Bildern), Excel (.xlsx), Bilder (PNG/JPG als ZIP) oder Text.
+- **Vorlagen:** Rechnung und Angebot mit Assistent (fortlaufende Nummern, Kleinunternehmer nach § 19 UStG), Besprechungsprotokoll, Cornell-Notizen, Lernplan, Wochenplaner, Stundenplan, To-do-Liste.
+- **Inhaltsverzeichnis und Kopf-/Fußzeilen:** Verzeichnis aus erkannten Überschriften mit Links; Kopf- und Fußzeilen mit Platzhaltern wie {seite}, {seiten}, {datum}.
+- **Aufgaben aus Kommentaren:** „[ ]", „TODO" oder „bis Freitag" in einer Notiz machen sie zur Aufgabe mit Fälligkeit. Erinnerungen und Export als .ics für den Kalender.
+
 ## Neu in Version 1.7
 
 - **Cloud-Dienste:** Neben Google Drive jetzt auch **Dropbox**, **iCloud Drive**, **WebDAV** (Nextcloud, ownCloud, MagentaCLOUD, GMX, WEB.DE, pCloud, Strato HiDrive, NAS) und **jeder Ordner** (z. B. ein synchronisierter Cloud-Ordner oder USB-Stick). Jeder Dienst sichert die Bibliothek automatisch als PDFs in „PDF Werkbank“, mehrere gleichzeitig. Alles unter *Cloud-Dienste* unten links in der Bibliothek.
@@ -266,6 +279,10 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/gdrive.js` | Automatisches Backup aller Dokumente als PDF in Google Drive |
 | `js/cloud.js` | Dropbox, WebDAV, iCloud Drive und Ordner: Anmeldung (OAuth mit PKCE), Backup, Datei-Browser |
 | `js/tools.js` | Texterkennung (Tesseract), PDF verkleinern, Zusammenführen |
+| `js/tasks.js` | Aufgaben aus Kommentaren, Fälligkeiten, .ics-Export |
+| `js/convert.js` | Umwandeln in Word, Excel, Bilder, Text |
+| `js/templates.js` | Vorlagen und Rechnungs-/Angebotsassistent |
+| `js/sign.js` | Zertifikate, digitale Signatur und Prüfung |
 | `js/compare.js` | Zwei PDFs Wort für Wort vergleichen |
 | `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
 | `js/content-engine.js` | Liest den Inhaltsstrom einer PDF-Seite, ermittelt jedes gezeichnete Objekt mit Position und schreibt den Strom mit gelöschten, geänderten, verschobenen oder geschwärzten Objekten neu |
