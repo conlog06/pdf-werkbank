@@ -7005,7 +7005,7 @@ async function regionImage(p, a, maxSide = 1600) {
 let katexP = null;
 function loadKatex() {
   if (window.katex) return Promise.resolve(window.katex);
-  if (!katexP) katexP = new Promise((res, rej) => { const s = document.createElement('script'); s.src = (window.WB_CONFIG && WB_CONFIG.katexScript) || 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js'; s.onload = () => res(window.katex); s.onerror = () => { katexP = null; rej(new Error('Formel-Vorschau nicht verfügbar (offline?)')); }; document.head.appendChild(s); });
+  if (!katexP) katexP = new Promise((res, rej) => { const s = document.createElement('script'); s.src = (window.WB_CONFIG && WB_CONFIG.katexScript) || 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js'; s.onload = () => res(window.katex); s.onerror = () => { katexP = null; rej(new Error('Formel-Vorschau nicht verfügbar (offline?)')); }; document.head.appendChild(s); });
   return katexP;
 }
 async function formulaTool() {
