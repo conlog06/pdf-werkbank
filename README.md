@@ -9,6 +9,19 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
+## Neu in Version 1.9
+
+- **Zitieren und Literaturliste:** Quellenangabe pro Dokument (DOI oder ISBN werden automatisch nachgeschlagen). Eine Markierung antippen und „Zitieren“ kopiert den Text mit Beleg und echter Buchseite (APA, Harvard, deutsche Zitierweise, IEEE). In der Bibliothek entsteht daraus die Literaturliste, auch als BibTeX oder für Zotero/Citavi.
+- **Probeklausur:** Die KI stellt aus dem Skript, bestimmten Seiten oder deinen Markierungen eine Klausur mit Multiple Choice und offenen Fragen zusammen, mit Zeitlimit. Danach korrigiert sie mit Teilpunkten, gibt eine Note und zeigt schwache Themen; Fehler werden auf Wunsch Lernkarten. Ohne KI entsteht die Klausur aus den Lernkarten.
+- **Mindmap:** Kapitel aus den Überschriften, dazu deine Markierungen und Notizen. Antippen springt zur Seite; mit KI gibt es Kapitel-Zusammenfassungen (einzeln oder alle als neue Seite). Export als Bild.
+- **Lernstatistik und Pomodoro:** Lernzeit pro Tag und Dokument, Serie, wiederholte Karten, Probeklausuren. Pomodoro-Timer (25/5 oder 50/10) mit Ton und Benachrichtigung, läuft über Dokumente hinweg.
+- **Formel als LaTeX:** Rahmen um eine gedruckte oder handschriftliche Formel ziehen; die KI liefert LaTeX mit Vorschau, kopierbar auch als MathML für Word.
+- **E-Rechnung:** Der Rechnungsassistent erstellt ZUGFeRD 2 (EN 16931) als PDF/A-3 mit eingebetteter factur-x.xml, für Behörden zusätzlich XRechnung 3.0 (mit Leitweg-ID). Geprüft mit dem offiziellen EN-16931- und XRechnung-Regelwerk. Eingehende E-Rechnungen (ZUGFeRD, XRechnung CII und UBL) werden lesbar angezeigt, mit GiroCode und CSV für die Buchhaltung.
+- **Serienbrief:** Platzhalter wie {Name} in Textfeldern plus Tabelle (CSV oder Excel) ergeben eine PDF mit allen Briefen oder eine Datei je Zeile. Vorschau direkt im Dokument.
+- **Belege scannen:** Kassenbon fotografieren, er wird automatisch zugeschnitten, entzerrt und als Seite abgelegt. Händler, Datum, Betrag und Mehrwertsteuer werden erkannt (KI oder Texterkennung auf dem Gerät). Export als CSV. In der Bibliothek: „Neu › Belegmappe“.
+- **Stapelverarbeitung:** Viele PDFs auf einmal: Texterkennung, Verkleinern, Wasserzeichen, Seitenzahlen, PDF/A, Passwort, Umwandeln in Word/Text/Bilder, Zusammenführen und Umbenennen nach Inhalt ({datum} {art} {titel} {nr} oder per KI).
+- **PDF/A und Barrierefreiheit:** Speichern als PDF/A-2b (Schriften werden eingebettet, Standardschriften durch maßgleiche freie Schriften ersetzt, sRGB-Profil, XMP). Prüfung auf Titel, Sprache, Text, Lesezeichen, Tags, Unicode und Kontrast, mit Ein-Klick-Korrekturen.
+
 ## Neu in Version 1.8
 
 - **Vorlesung aufnehmen:** Mikrofon im Kopfbereich. Jede Notiz und Markierung merkt sich die Stelle in der Aufnahme. Beim Abspielen springt ein Tipp auf die Notiz zur passenden Sekunde; noch nicht Geschriebenes wird ausgegraut. Aufnahmen landen in der Bibliothek, in .werkbank-Dateien und im Sync.
@@ -283,6 +296,13 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/convert.js` | Umwandeln in Word, Excel, Bilder, Text |
 | `js/templates.js` | Vorlagen und Rechnungs-/Angebotsassistent |
 | `js/sign.js` | Zertifikate, digitale Signatur und Prüfung |
+| `js/cite.js` | Quellenangaben, Zitierstile, BibTeX und RIS |
+| `js/einvoice.js` | E-Rechnung: ZUGFeRD/XRechnung erzeugen und lesen |
+| `js/pdfa.js` | PDF/A erzeugen, Schriften einbetten, Vorabprüfung |
+| `js/stats.js` | Lernstatistik und Pomodoro |
+| `js/scan.js` | Belegfotos zuschneiden und entzerren, Belegtext auswerten |
+| `js/batch.js` | Stapelverarbeitung |
+| `fonts/pdfa/` | Liberation-Schriften (OFL) als „WB Sans/Serif/Mono“ für PDF/A |
 | `js/compare.js` | Zwei PDFs Wort für Wort vergleichen |
 | `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
 | `js/content-engine.js` | Liest den Inhaltsstrom einer PDF-Seite, ermittelt jedes gezeichnete Objekt mit Position und schreibt den Strom mit gelöschten, geänderten, verschobenen oder geschwärzten Objekten neu |
