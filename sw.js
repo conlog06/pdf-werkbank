@@ -3,8 +3,8 @@
  * Eigene Dateien: erst Netz, dann Cache (Updates kommen sofort an).
  * Bibliotheken und Schriften vom CDN: erst Cache, dann Netz (sie ändern sich nie).
  */
-const VERSION = 'pdf-werkbank-v17';
-const APP = ['./', 'index.html', 'library.html', 'js/ai.js', 'js/batch.js', 'js/cite.js', 'js/einvoice.js', 'js/pdfa.js', 'js/scan.js', 'js/stats.js', 'js/app.js', 'js/calc.js', 'js/cloud.js', 'js/compare.js', 'js/config.js', 'js/content-engine.js', 'js/convert.js', 'js/decrypt.js', 'js/diag.js', 'js/gdrive.js', 'js/library.js', 'js/palette.js', 'js/photos.js', 'js/search.js', 'js/sign.js', 'js/share.js', 'js/store.js', 'js/sync.js', 'js/tasks.js', 'js/templates.js', 'js/tools.js', 'js/update.js', 'js/wbfile.js', 'js/vendor/fontkit.umd.min.js', 'js/vendor/pdf-lib-crypt.min.js', 'js/vendor/qrcode.js', 'js/vendor/supabase.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'fonts/pdfa/WBSans-Regular.ttf', 'fonts/pdfa/WBSans-Bold.ttf'];
+const VERSION = 'pdf-werkbank-v18';
+const APP = ['./', 'index.html', 'library.html', 'js/ai.js', 'js/anki.js', 'js/batch.js', 'js/ledger.js', 'js/libchat.js', 'js/cite.js', 'js/einvoice.js', 'js/pdfa.js', 'js/scan.js', 'js/stats.js', 'js/app.js', 'js/calc.js', 'js/cloud.js', 'js/compare.js', 'js/config.js', 'js/content-engine.js', 'js/convert.js', 'js/decrypt.js', 'js/diag.js', 'js/gdrive.js', 'js/library.js', 'js/palette.js', 'js/photos.js', 'js/search.js', 'js/sign.js', 'js/share.js', 'js/store.js', 'js/sync.js', 'js/tasks.js', 'js/templates.js', 'js/tools.js', 'js/update.js', 'js/wbfile.js', 'js/vendor/fontkit.umd.min.js', 'js/vendor/pdf-lib-crypt.min.js', 'js/vendor/qrcode.js', 'js/vendor/supabase.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'fonts/pdfa/WBSans-Regular.ttf', 'fonts/pdfa/WBSans-Bold.ttf'];
 const CDN = [
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',

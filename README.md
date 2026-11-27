@@ -9,6 +9,20 @@ Eigener PDF-Editor, der komplett im Browser läuft: am Computer, auf dem iPad mi
 
 Beim ersten Start wird ein Beispieldokument geladen. Eigene Dateien öffnest du über **Öffnen** oder per Drag & Drop ins Fenster.
 
+## Neu in Version 2.0
+
+- **Suche neu:** findet Treffer auch über Zeilenumbrüche und Silbentrennung, in eigenen Notizen und Textfeldern und in Vorlesungs-Transkripten. Trefferliste mit Zusammenhang, Optionen für Groß-/Kleinschreibung und ganze Wörter, Sprung in die Bibliothekssuche. In schmalen Fenstern klappt die Kopfzeile schrittweise ein; die Suche wird zum Symbol und öffnet sich über der Leiste.
+- **Vorlesung als Transkript:** Chrome und Edge schreiben während der Aufnahme live mit. Ältere Aufnahmen werden auf dem Gerät mit Whisper verschriftlicht (einmalig ca. 80 MB) oder mit einem OpenAI-Schlüssel in der Cloud. Ein Klick auf einen Satz springt an die Stelle im Ton. Aus dem Transkript entstehen auf Wunsch eine Zusammenfassung als Seite oder Lernkarten.
+- **Bibliothek fragen:** Die KI antwortet aus allen Dokumenten der Bibliothek, mit anklickbaren Quellen (Dokument und Seite). Es werden nur die passendsten Ausschnitte gesendet.
+- **Anki und Lerngruppe:** Lernkarten als Anki-Stapel (.apkg, mit Lernstand) oder Text exportieren, aus Anki (.apkg), CSV oder Text importieren. Lernpakete (.wblern) mit Karten und Markierungen für Kommilitonen; doppelte Karten werden erkannt.
+- **Rechnungsbuch:** Jede Rechnung aus dem Assistenten landet in „Rechnungen“ (Bibliothek): offen, überfällig, bezahlt. Zahlungserinnerung, 1. und 2. Mahnung per Klick als PDF. Export der Einnahmen-Überschuss-Rechnung (EÜR) als CSV, inklusive gescannter Belege.
+- **Verträge auswerten:** Die KI fasst Laufzeit, Kündigungsfrist, Kosten, Pflichten und auffällige Klauseln zusammen; Fristen werden auf Wunsch Aufgaben mit Erinnerung.
+- **Automatische Regeln:** Neue PDFs werden nach Name und Inhalt erkannt und automatisch per Texterkennung durchsuchbar gemacht, umbenannt, als Favorit markiert und in Ordner verschoben. In der Desktop-App kann ein Ordner (Scanner, Downloads) überwacht werden.
+- **Gemeinsam bearbeiten:** Zeiger der anderen in Echtzeit; @Name in einer Notiz benachrichtigt die Person.
+- **Android-App:** APK im Release; Speichern läuft über „Teilen“. Fotos werden beim Einfügen automatisch zugeschnitten und gerade gerückt.
+- **Versionen:** Versionen mit Namen speichern und mit dem aktuellen Stand vergleichen (neu, geändert, entfernt je Seite).
+- **Einführung** für neue Nutzer (⋯ › Hilfe › Einführung).
+
 ## Neu in Version 1.9
 
 - **Zitieren und Literaturliste:** Quellenangabe pro Dokument (DOI oder ISBN werden automatisch nachgeschlagen). Eine Markierung antippen und „Zitieren“ kopiert den Text mit Beleg und echter Buchseite (APA, Harvard, deutsche Zitierweise, IEEE). In der Bibliothek entsteht daraus die Literaturliste, auch als BibTeX oder für Zotero/Citavi.
@@ -302,6 +316,11 @@ Als App installieren: die Online-Version in Safari öffnen, *Teilen → Zum Home
 | `js/stats.js` | Lernstatistik und Pomodoro |
 | `js/scan.js` | Belegfotos zuschneiden und entzerren, Belegtext auswerten |
 | `js/batch.js` | Stapelverarbeitung |
+| `js/libchat.js` | Fragen an die ganze Bibliothek (KI mit Quellen) |
+| `js/anki.js` | Anki-Export und -Import (sql.js) |
+| `js/ledger.js` | Rechnungsbuch, Mahnungen, EÜR |
+| `src/app/` | Quelltext des Editors in Abschnitten; `node tools/build.mjs` baut daraus `js/app.js` |
+| `tests/smoke.mjs` | Rauchtests, laufen bei jedem Push (GitHub Actions) |
 | `fonts/pdfa/` | Liberation-Schriften (OFL) als „WB Sans/Serif/Mono“ für PDF/A |
 | `js/compare.js` | Zwei PDFs Wort für Wort vergleichen |
 | `js/sync.js`, `js/config.js`, `supabase/schema.sql` | Abgleich mit Supabase: Konto, Live-Updates, Konflikte |
@@ -331,3 +350,7 @@ Verwendete Bibliotheken (per CDN geladen, offline aus dem Cache): [pdf.js](https
 - Die Handschrifterkennung im Rechner kennt Ziffern, Rechenzeichen und Klammern. Funktionsnamen und Buchstaben über die Tastatur (auf dem iPad geht auch Kritzeln mit dem Pencil ins Eingabefeld).
 - Kopierte PDF-Inhalte landen auf anderen Seiten als Bild, nicht als Vektor.
 - Beim allerersten Start braucht der Browser eine Internetverbindung, um die Bibliotheken zu laden.
+
+## Entwicklung
+
+Der Editor-Code liegt in `src/app/` (nummerierte Abschnitte). Nach Änderungen `node tools/build.mjs` ausführen; die CI prüft, dass `js/app.js` aktuell ist, und startet die Rauchtests (`tests/smoke.mjs`).
